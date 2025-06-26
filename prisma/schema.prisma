@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Admin model for authentication
+model Admin {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  name          String
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Resource model for study materials
+model Resource {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  fileUrl       String
+  fileType      String
+  fileSize      Int
+  isPaid        Boolean   @default(false)
+  price         Float?    // Only applicable if isPaid is true
+  category      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  downloads     Int       @default(0)
+}
+
+// Blog model for blog posts
+model Blog {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  slug          String    @unique
+  content       String
+  excerpt       String?
+  featuredImage String?
+  author        String
+  published     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Message model for client messages
+model Message {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String    @db.ObjectId
+  sender        String    // "user" or "admin"
+  content       String
+  timestamp     DateTime  @default(now())
+  isRead        Boolean   @default(false)
+  
+  conversation  Conversation @relation(fields: [conversationId], references: [id])
+}
+
+// Conversation model for grouping messages
+model Conversation {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  userName      String
+  userEmail     String
+  startedAt     DateTime  @default(now())
+  lastMessageAt DateTime  @default(now())
+  isResolved    Boolean   @default(false)
+  
+  messages      Message[]
+}
+
+// Video model for homepage videos
+model Video {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String?
+  videoUrl      String
+  thumbnailUrl  String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Payment model for tracking payments
+model Payment {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  resourceId    String?   @db.ObjectId
+  amount        Float
+  currency      String    @default("USD")
+  status        String    // "pending", "completed", "failed"
+  stripePaymentId String
+  stripeCustomerId String?
+  customerEmail String
+  customerName  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
