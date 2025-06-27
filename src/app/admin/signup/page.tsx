@@ -52,23 +52,13 @@ export default function AdminSignup() {
         setPassword("");
         setConfirmPassword("");
         
-        // Show custom success message if provided
-        if (result.message) {
-          setSuccess(true);
-          // Don't redirect if this was a synchronization
-          if (result.message.includes("synchronized")) {
-            // Just show the success message
-          } else {
-            // Redirect to login after 2 seconds for normal signup
-            setTimeout(() => {
-              router.push("/admin/login");
-            }, 2000);
-          }
-        } else {
-          // Default redirect to login after 2 seconds
-          setTimeout(() => {
-            router.push("/admin/login");
-          }, 2000);
+        // Show success message
+        setSuccess(true);
+        
+        // Explicitly redirect to login after signup
+        if (result.redirect) {
+          // Use router.push directly instead of setTimeout
+          router.push("/admin/login");
         }
       } else {
         // Check for specific error types

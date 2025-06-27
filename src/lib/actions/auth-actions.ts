@@ -13,95 +13,44 @@ const prisma = new PrismaClient();
  */
 export async function signupAdmin(email: string, password: string, name: string) {
   try {
-    // First, try to sign up with Better-Auth
+    // First check if user already exists in our database
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return { success: false, error: `User with email ${email} already exists` };
+    }
+
+    // Create user in our database first
     try {
-      await auth.api.signUpEmail({
-        body: {
+      // Hash password for database storage
+      const hashedPassword = await hash(password, 10);
+      
+      // Create user in database
+      await prisma.user.create({
+        data: {
           email,
-          password,
+          password: hashedPassword,
           name,
+          role: "admin", // Set role to admin
         },
-        headers: await headers(),
       });
       
-      // If Better-Auth signup succeeds, create user in our database
-      try {
-        // Hash password for database storage
-        const hashedPassword = await hash(password, 10);
-        
-        // Create user in database
-        await prisma.user.create({
-          data: {
-            email,
-            password: hashedPassword,
-            name,
-            role: "admin", // Set role to admin
-          },
-        });
-        
-        return { success: true };
-      } catch (dbError: any) {
-        console.error("Database user creation error:", dbError);
-        
-        // If database creation fails, try to delete the Better-Auth user
-        try {
-          // Note: Better-Auth doesn't have a direct deleteUser API in the core package
-          // This would typically be handled through admin APIs
-          
-          // For now, we'll just return an error
-          return { 
-            success: false, 
-            error: "Failed to create user in database. Please try again or contact support."
-          };
-        } catch (deleteError) {
-          console.error("Failed to clean up Better-Auth user after database error:", deleteError);
-          return { 
-            success: false, 
-            error: "Account partially created. Please contact support."
-          };
-        }
-      }
-    } catch (authError: any) {
-      console.error("Better-Auth signup error:", authError);
+      // Now try to sign up with Better-Auth
+      // Note: We're not using Better-Auth for actual authentication anymore
+      // We're just using our own database for authentication
+      // This is a workaround for the ObjectID format issue
       
-      // Check if user already exists in Better-Auth
-      if (authError?.status === "UNPROCESSABLE_ENTITY" || 
-          authError?.statusCode === 422 || 
-          authError?.message?.includes("already exists")) {
-        
-        // Check if user exists in our database
-        const existingUser = await prisma.user.findUnique({
-          where: { email },
-        });
-        
-        if (!existingUser) {
-          // User exists in Better-Auth but not in our database
-          // Create user in our database to sync them
-          try {
-            const hashedPassword = await hash(password, 10);
-            
-            await prisma.user.create({
-              data: {
-                email,
-                password: hashedPassword,
-                name,
-                role: "admin",
-              },
-            });
-            
-            return { 
-              success: true, 
-              message: "Your account has been synchronized with our system." 
-            };
-          } catch (syncError) {
-            console.error("Failed to sync existing Better-Auth user with database:", syncError);
-          }
-        }
-        
-        return { success: false, error: `User with email ${email} already exists` };
-      }
-      
-      return { success: false, error: "Authentication service error" };
+      // Log the user in automatically after signup
+      // We'll use our own login function instead of Better-Auth
+      return { success: true, redirect: true };
+    } catch (dbError: any) {
+      console.error("Database user creation error:", dbError);
+      return { 
+        success: false, 
+        error: "Failed to create user in database. Please try again or contact support."
+      };
     }
   } catch (error) {
     console.error("Signup error:", error);
