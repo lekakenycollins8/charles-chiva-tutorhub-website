@@ -34,7 +34,7 @@ export const authOptions: NextAuthConfig = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         // Ensure credentials are properly typed
         if (!credentials?.email || !credentials?.password || typeof credentials.password !== 'string') {
           return null;
@@ -42,7 +42,9 @@ export const authOptions: NextAuthConfig = {
 
         // Find user by email
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { 
+            email: credentials.email as string 
+          },
         });
 
         // If user doesn't exist or password doesn't match
@@ -62,7 +64,8 @@ export const authOptions: NextAuthConfig = {
           name: user.name || "",
           email: user.email,
           role: user.role,
-          emailVerified: user.emailVerified || null
+          // Convert to boolean for NextAuth v5 compatibility
+          emailVerified: user.emailVerified === true
         };
       }
     })
@@ -180,5 +183,10 @@ declare module "next-auth" {
       role?: string;
       emailVerified?: boolean;
     };
+  }
+  
+  // Make NextAuthResult callable
+  interface NextAuthResult {
+    (): Promise<Session | null>;
   }
 }

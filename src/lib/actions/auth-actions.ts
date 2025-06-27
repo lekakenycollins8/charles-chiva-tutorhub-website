@@ -52,7 +52,7 @@ export async function signupAdmin(data: SignupData) {
         email: data.email,
         password: hashedPassword,
         role: "admin",
-        emailVerified: new Date(), // Auto-verify for admin signup
+        emailVerified: true, // Auto-verify for admin signup
       },
     });
     
