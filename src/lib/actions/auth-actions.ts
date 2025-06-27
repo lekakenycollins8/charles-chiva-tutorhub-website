@@ -9,6 +9,107 @@ import { APIError } from "better-auth/api";
 const prisma = new PrismaClient();
 
 /**
+ * Server action to handle admin signup
+ */
+export async function signupAdmin(email: string, password: string, name: string) {
+  try {
+    // First, try to sign up with Better-Auth
+    try {
+      await auth.api.signUpEmail({
+        body: {
+          email,
+          password,
+          name,
+        },
+        headers: await headers(),
+      });
+      
+      // If Better-Auth signup succeeds, create user in our database
+      try {
+        // Hash password for database storage
+        const hashedPassword = await hash(password, 10);
+        
+        // Create user in database
+        await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name,
+            role: "admin", // Set role to admin
+          },
+        });
+        
+        return { success: true };
+      } catch (dbError: any) {
+        console.error("Database user creation error:", dbError);
+        
+        // If database creation fails, try to delete the Better-Auth user
+        try {
+          // Note: Better-Auth doesn't have a direct deleteUser API in the core package
+          // This would typically be handled through admin APIs
+          
+          // For now, we'll just return an error
+          return { 
+            success: false, 
+            error: "Failed to create user in database. Please try again or contact support."
+          };
+        } catch (deleteError) {
+          console.error("Failed to clean up Better-Auth user after database error:", deleteError);
+          return { 
+            success: false, 
+            error: "Account partially created. Please contact support."
+          };
+        }
+      }
+    } catch (authError: any) {
+      console.error("Better-Auth signup error:", authError);
+      
+      // Check if user already exists in Better-Auth
+      if (authError?.status === "UNPROCESSABLE_ENTITY" || 
+          authError?.statusCode === 422 || 
+          authError?.message?.includes("already exists")) {
+        
+        // Check if user exists in our database
+        const existingUser = await prisma.user.findUnique({
+          where: { email },
+        });
+        
+        if (!existingUser) {
+          // User exists in Better-Auth but not in our database
+          // Create user in our database to sync them
+          try {
+            const hashedPassword = await hash(password, 10);
+            
+            await prisma.user.create({
+              data: {
+                email,
+                password: hashedPassword,
+                name,
+                role: "admin",
+              },
+            });
+            
+            return { 
+              success: true, 
+              message: "Your account has been synchronized with our system." 
+            };
+          } catch (syncError) {
+            console.error("Failed to sync existing Better-Auth user with database:", syncError);
+          }
+        }
+        
+        return { success: false, error: `User with email ${email} already exists` };
+      }
+      
+      return { success: false, error: "Authentication service error" };
+    }
+  } catch (error) {
+    console.error("Signup error:", error);
+    return { success: false, error: "An error occurred during signup" };
+  }
+}
+
+/**
  * Server action to handle admin login
  */
 export async function loginAdmin(email: string, password: string) {

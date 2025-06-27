@@ -1,16 +1,54 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrismaClient } from "@prisma/client";
 import { FileText, BookOpen, MessageSquare, Video } from "lucide-react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
 export default async function AdminDashboard() {
-  // Fetch counts from database
-  const resourceCount = await prisma.resource.count();
-  const blogCount = await prisma.blog.count();
-  const messageCount = await prisma.message.count();
-  const videoCount = await prisma.video.count();
+  // Check authentication using Better-Auth
+  try {
+    const sessionData = await auth.api.getSession({
+      headers: await headers(),
+    });
+    
+    // If no session or user, redirect to login
+    if (!sessionData || !sessionData.session || !sessionData.user) {
+      redirect("/admin/login?error=unauthorized");
+    }
+    
+    // Get user from database to verify role
+    const user = await prisma.user.findUnique({
+      where: { id: sessionData.user.id },
+    });
+    
+    if (!user || user.role !== "admin") {
+      redirect("/admin/login?error=forbidden");
+    }
+  } catch (error) {
+    console.error("Authentication error:", error);
+    redirect("/admin/login?error=authentication");
+  }
+  
+  // Fetch counts from database with error handling
+  let resourceCount = 0;
+  let blogCount = 0;
+  let messageCount = 0;
+  let videoCount = 0;
+  
+  try {
+    resourceCount = await prisma.resource.count();
+    blogCount = await prisma.blog.count();
+    messageCount = await prisma.message.count();
+    videoCount = await prisma.video.count();
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    // Continue with zeros, we'll show an error message
+  }
 
   // Dashboard stats
   const stats = [
@@ -46,6 +84,16 @@ export default async function AdminDashboard() {
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-gray-500">Welcome to the Chiva TutorHub admin dashboard.</p>
       </div>
+      
+      {/* Error message if database fetch failed */}
+      {(resourceCount === 0 && blogCount === 0 && messageCount === 0 && videoCount === 0) && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Database Error</AlertTitle>
+          <AlertDescription>
+            There was an error fetching dashboard data. Some information may not be displayed correctly.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
