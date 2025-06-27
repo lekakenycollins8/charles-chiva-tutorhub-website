@@ -42,7 +42,7 @@ export default function AdminSignup() {
 
     try {
       // Use server action for signup
-      const result = await signupAdmin(email, password, name);
+      const result = await signupAdmin({ name, email, password });
       
       if (result.success) {
         setSuccess(true);
@@ -55,17 +55,16 @@ export default function AdminSignup() {
         // Show success message
         setSuccess(true);
         
-        // Explicitly redirect to login after signup
-        if (result.redirect) {
-          // Use router.push directly instead of setTimeout
+        // Automatically redirect to login after signup
+        setTimeout(() => {
           router.push("/admin/login");
-        }
+        }, 2000); // Redirect after 2 seconds
       } else {
         // Check for specific error types
-        if (result.error?.includes("already exists") || result.error?.includes("already in use")) {
+        if (result.message.includes("already exists") || result.message.includes("already in use")) {
           setError(`An account with email ${email} already exists. Please use a different email or try logging in.`);
         } else {
-          setError(result.error || "Signup failed");
+          setError(result.message || "Signup failed");
         }
       }
     } catch (err: any) {

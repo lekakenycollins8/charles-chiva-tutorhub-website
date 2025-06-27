@@ -44,13 +44,13 @@ export default function AdminLogin() {
 
     try {
       // Use server action instead of direct API call
-      const result = await loginAdmin(email, password);
+      const result = await loginAdmin({ email, password });
       
       if (result.success) {
         // Redirect to admin dashboard on successful login
         router.push("/admin/dashboard");
       } else {
-        setError(result.error || "Login failed");
+        setError(result.message || "Login failed");
       }
     } catch (err: any) {
       setError(err.message || "An error occurred during login");

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { compare } from "bcrypt";
-import { auth } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
@@ -48,63 +48,20 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-
-    // Use Better-Auth API to sign in
-    try {
-      const result = await auth.api.signInEmail({
-        body: { email, password },
-        asResponse: true,
-      });
-      
-      // Create response with the same status
-      const response = NextResponse.json(
-        { message: "Login successful" },
-        { status: result.status }
-      );
-      
-      // Copy all headers from the Better-Auth response
-      const authHeaders = result.headers;
-      authHeaders.forEach((value, key) => {
-        if (key.toLowerCase() === 'set-cookie') {
-          // Cookies are handled separately
-          return;
-        }
-        response.headers.set(key, value);
-      });
-      
-      // Copy cookies from the Better-Auth response
-      const cookies = authHeaders.getSetCookie();
-      cookies.forEach(cookie => {
-        const [name, ...parts] = cookie.split('=');
-        const value = parts.join('=').split(';')[0];
-        
-        // Parse expiration date from cookie if present
-        let expires;
-        const expiresMatch = cookie.match(/expires=([^;]+)/);
-        if (expiresMatch && expiresMatch[1]) {
-          expires = new Date(expiresMatch[1]);
-        }
-        
-        response.cookies.set({
-          name,
-          value,
-          httpOnly: cookie.includes('HttpOnly'),
-          secure: cookie.includes('Secure'),
-          sameSite: cookie.includes('SameSite=Lax') ? 'lax' : 
-                   cookie.includes('SameSite=Strict') ? 'strict' : 'none',
-          expires,
-          path: "/",
-        });
-      });
-
-      return response;
-    } catch (error) {
-      console.error('Better-Auth sign in error:', error);
-      return NextResponse.json(
-        { message: "Authentication failed" },
-        { status: 500 }
-      );
-    }
+    
+    // With NextAuth, we should redirect to the sign-in page
+    // This API route is now mostly for validation before redirecting
+    
+    // Create successful response
+    const response = NextResponse.json(
+      { 
+        message: "Login successful",
+        redirectUrl: "/api/auth/signin"
+      },
+      { status: 200 }
+    );
+    
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

@@ -2,31 +2,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrismaClient } from "@prisma/client";
 import { FileText, BookOpen, MessageSquare, Video } from "lucide-react";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getSession } from "@/lib/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
 export default async function AdminDashboard() {
-  // Check authentication using Better-Auth
+  // Check authentication using NextAuth
   try {
-    const sessionData = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await getSession();
     
     // If no session or user, redirect to login
-    if (!sessionData || !sessionData.session || !sessionData.user) {
+    if (!session || !session.user) {
       redirect("/admin/login?error=unauthorized");
     }
     
-    // Get user from database to verify role
-    const user = await prisma.user.findUnique({
-      where: { id: sessionData.user.id },
-    });
-    
-    if (!user || user.role !== "admin") {
+    // Check if the user has admin role
+    if (session.user.role !== "admin") {
       redirect("/admin/login?error=forbidden");
     }
   } catch (error) {

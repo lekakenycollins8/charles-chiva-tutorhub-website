@@ -1,39 +1,119 @@
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "@prisma/client";
-import { cookies, headers } from "next/headers";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { compare, hash } from "bcrypt";
+import type { DefaultSession, Session } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { cookies } from "next/headers";
+import NextAuth, { NextAuthConfig, NextAuthResult } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
-// Create Better Auth instance
-export const auth = betterAuth({
-  // Use the secret from environment variables
-  secret: process.env.BETTER_AUTH_SECRET || "your-secret-key-change-this-in-production",
-  
-  // Set the base URL for your application
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  
+/**
+ * NextAuth configuration options
+ */
+export const authOptions: NextAuthConfig = {
   // Use Prisma adapter for database operations
-  database: prismaAdapter(prisma, { provider: "mongodb" }),
+  adapter: PrismaAdapter(prisma),
   
-  // Enable email and password authentication for admin
-  emailAndPassword: {
-    enabled: true,
-    // Add validation rules
-    minPasswordLength: 8,
-    maxPasswordLength: 100,
-  },
+  // Secret for JWT encryption
+  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production",
   
   // Configure session settings
   session: {
-    // Set session expiration to 7 days
-    expiresIn: 60 * 60 * 24 * 7, // 7 days in seconds
+    strategy: "jwt" as const,
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  },
+  
+  // Configure authentication providers
+  providers: [
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        // Ensure credentials are properly typed
+        if (!credentials?.email || !credentials?.password || typeof credentials.password !== 'string') {
+          return null;
+        }
+
+        // Find user by email
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+
+        // If user doesn't exist or password doesn't match
+        if (!user || !user.password) {
+          return null;
+        }
+
+        // Compare password with hashed password in database
+        const passwordMatch = await compare(credentials.password, user.password as string);
+        if (!passwordMatch) {
+          return null;
+        }
+
+        // Return user data for session
+        return {
+          id: user.id,
+          name: user.name || "",
+          email: user.email,
+          role: user.role,
+          emailVerified: user.emailVerified || null
+        };
+      }
+    })
+  ],
+  
+  // Customize JWT callbacks
+  callbacks: {
+    async jwt({ token, user }: { token: JWT, user: any }) {
+      // Add role and other custom fields to JWT token
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.emailVerified = user.emailVerified;
+      }
+      return token;
+    },
+    async session({ session, token }: { session: any, token: JWT }) {
+      // Add custom fields to session
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.emailVerified = token.emailVerified as boolean;
+      }
+      return session;
+    },
+  },
+  
+  // Configure pages for custom auth flows
+  pages: {
+    signIn: "/admin/login",
+    signOut: "/admin/signout",
+    error: "/admin/login",
   },
   
   // Add debug mode in development
   debug: process.env.NODE_ENV !== "production",
-});
+};
+
+/**
+ * Create and export the auth function
+ * In NextAuth.js v5, this is the correct way to export the auth function
+ * We need to add proper typing to make TypeScript recognize it as callable
+ */
+export const auth: NextAuthResult = NextAuth(authOptions);
+
+// Add this type declaration to make auth() callable
+declare module "next-auth" {
+  interface NextAuthResult {
+    (): Promise<Session | null>;
+  }
+}
 
 /**
  * Helper function to get the current session
@@ -41,10 +121,18 @@ export const auth = betterAuth({
  */
 export async function getSession() {
   try {
-    const cookieHeader = cookies().toString();
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    // In NextAuth.js v5, auth() is directly callable to get the session
+    const session = await auth();
+    
+    // Debug session information
+    if (process.env.NODE_ENV !== "production" && session) {
+      console.log("Session retrieved:", {
+        hasUser: !!session?.user,
+        email: session?.user?.email,
+        expires: session?.expires,
+      });
+    }
+    
     return session;
   } catch (error) {
     console.error("Failed to get session:", error);
@@ -67,9 +155,30 @@ export async function isAuthenticated() {
  */
 export async function isAdmin() {
   const session = await getSession();
-  // Check if user exists and has custom data with role field
-  return !!session?.user && (session.user as any).role === "admin";
+  return !!session?.user && session.user.role === "admin";
+}
+/**
+ * Helper function to hash a password
+ */
+export async function hashPassword(password: string): Promise<string> {
+  return await hash(password, 12);
 }
 
-// Export auth instance for use in other files
-export default auth;
+// Export types for NextAuth
+declare module "next-auth" {
+  interface User {
+    id: string;
+    role?: string;
+    emailVerified?: boolean;
+  }
+
+  interface Session {
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      role?: string;
+      emailVerified?: boolean;
+    };
+  }
+}
