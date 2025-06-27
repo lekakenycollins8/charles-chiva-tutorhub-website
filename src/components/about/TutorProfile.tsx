@@ -1,7 +1,7 @@
 "use client";
 import { aboutContent } from '@/data/aboutData';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { FaGraduationCap, FaBook, FaChalkboardTeacher, FaUserTie } from 'react-icons/fa';
 
 const TutorProfile = () => {
   const { intro } = aboutContent;
@@ -11,7 +11,7 @@ const TutorProfile = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left side - Image with decorative elements */}
+            {/* Left side - Abstract tutor representation */}
             <motion.div 
               className="relative"
               initial={{ opacity: 0, x: -50 }}
@@ -20,17 +20,53 @@ const TutorProfile = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <motion.div 
-                className="relative z-10 rounded-2xl overflow-hidden shadow-2xl"
+                className="relative z-10 rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-50 via-white to-blue-100 p-8"
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <div className="aspect-[4/5] relative">
-                  <Image
-                    src="/tutor-profile.jpg" 
-                    alt="Tutor Profile"
-                    fill
-                    className="object-cover"
-                  />
+                <div className="aspect-[4/5] relative flex flex-col items-center justify-center">
+                  {/* Abstract tutor representation */}
+                  <div className="relative w-48 h-48 mb-8">
+                    {/* Abstract head shape */}
+                    <motion.div 
+                      className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full shadow-lg"
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 4, repeat: Infinity, repeatType: "reverse" }}
+                    >
+                      {/* Abstract face elements */}
+                      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-16 h-6 bg-blue-400 rounded-full opacity-70"></div>
+                    </motion.div>
+                    
+                    {/* Abstract body */}
+                    <motion.div 
+                      className="absolute top-24 left-1/2 transform -translate-x-1/2 w-40 h-48 bg-gradient-to-b from-blue-600 to-blue-700 rounded-2xl shadow-lg"
+                      animate={{ scale: [1, 1.02, 1] }}
+                      transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+                    />
+                  </div>
+                  
+                  {/* Education icons */}
+                  <div className="grid grid-cols-2 gap-6 w-full max-w-xs mx-auto">
+                    {[
+                      { icon: <FaGraduationCap className="w-8 h-8" />, label: "PhD Qualified" },
+                      { icon: <FaChalkboardTeacher className="w-8 h-8" />, label: "Expert Tutor" },
+                      { icon: <FaBook className="w-8 h-8" />, label: "Curriculum Specialist" },
+                      { icon: <FaUserTie className="w-8 h-8" />, label: "Industry Professional" }
+                    ].map((item, index) => (
+                      <motion.div 
+                        key={index}
+                        className="flex flex-col items-center text-center"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 + (index * 0.2) }}
+                      >
+                        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
+                          {item.icon}
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
                 
                 {/* Experience badge */}
