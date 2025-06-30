@@ -3,8 +3,8 @@ import ResourceForm from "@/components/admin/resources/ResourceForm";
 import { getResource } from "@/lib/actions/resource-actions";
 import { notFound } from "next/navigation";
 
-export default async function EditResourcePage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function EditResourcePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { success, resource, message } = await getResource(id);
   
   if (!success || !resource) {

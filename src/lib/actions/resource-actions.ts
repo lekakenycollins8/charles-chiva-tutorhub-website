@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -82,10 +83,14 @@ export async function createResource(formData: FormData) {
     // Create uploads directory if it doesn't exist
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     try {
-      await writeFile(path.join(uploadsDir, '.gitkeep'), '');
+      if (!existsSync(uploadsDir)) {
+        await mkdir(uploadsDir, { recursive: true });
+        // Create .gitkeep to ensure the directory is tracked by git
+        await writeFile(path.join(uploadsDir, '.gitkeep'), '');
+      }
     } catch (error) {
-      // Directory already exists or cannot be created
       console.error("Error creating uploads directory:", error);
+      return { success: false, message: 'Failed to create uploads directory' };
     }
     
     // Generate a unique filename
@@ -146,20 +151,23 @@ export async function updateResource(id: string, formData: FormData) {
     let fileType = existingResource.fileType;
     let fileSize = existingResource.fileSize;
     
-    if (file && file.size > 0) {
+    if (file) {
       // Create uploads directory if it doesn't exist
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
       try {
-        await writeFile(path.join(uploadsDir, '.gitkeep'), '');
+        if (!existsSync(uploadsDir)) {
+          await mkdir(uploadsDir, { recursive: true });
+          // Create .gitkeep to ensure the directory is tracked by git
+          await writeFile(path.join(uploadsDir, '.gitkeep'), '');
+        }
       } catch (error) {
-        // Directory already exists or cannot be created
         console.error("Error creating uploads directory:", error);
+        return { success: false, message: 'Failed to create uploads directory' };
       }
       
       // Generate a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = path.join(uploadsDir, fileName);
+      const fileName = `${uuidv4()}.${file.name.split('.').pop()}`;
+      const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
       
       // Convert file to buffer and save it
       const buffer = Buffer.from(await file.arrayBuffer());
