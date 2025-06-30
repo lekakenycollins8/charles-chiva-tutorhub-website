@@ -6,6 +6,9 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
+// Import SessionProvider wrapper (client component)
+import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,11 +34,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <Navbar />
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />        
+        <SessionProviderWrapper>
+          <Navbar />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </SessionProviderWrapper>        
       </body>
     </html>
   );

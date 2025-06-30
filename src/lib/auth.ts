@@ -3,8 +3,8 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare, hash } from "bcrypt";
 import type { DefaultSession, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { cookies } from "next/headers";
-import NextAuth, { NextAuthConfig, NextAuthResult } from "next-auth";
+import { getServerSession } from "next-auth/next";
+import NextAuth from "next-auth";
 import type { JWT } from "next-auth/jwt";
 
 // Initialize Prisma client
@@ -13,12 +13,18 @@ const prisma = new PrismaClient();
 /**
  * NextAuth configuration options
  */
-export const authOptions: NextAuthConfig = {
+export const authOptions = {
   // Use Prisma adapter for database operations
   adapter: PrismaAdapter(prisma),
   
   // Secret for JWT encryption
   secret: process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production",
+  
+  // JWT configuration
+  jwt: {
+    // A secret to use for key generation. Defaults to the top-level `secret`.
+    secret: process.env.NEXTAUTH_SECRET || "fallback-secret-do-not-use-in-production",
+  },
   
   // Configure session settings
   session: {
@@ -107,16 +113,8 @@ export const authOptions: NextAuthConfig = {
 /**
  * Create and export the auth function
  * In NextAuth.js v5, this is the correct way to export the auth function
- * We need to add proper typing to make TypeScript recognize it as callable
  */
-export const auth: NextAuthResult = NextAuth(authOptions);
-
-// Add this type declaration to make auth() callable
-declare module "next-auth" {
-  interface NextAuthResult {
-    (): Promise<Session | null>;
-  }
-}
+export const auth = NextAuth(authOptions);
 
 /**
  * Helper function to get the current session
@@ -124,8 +122,8 @@ declare module "next-auth" {
  */
 export async function getSession() {
   try {
-    // In NextAuth.js v5, auth() is directly callable to get the session
-    const session = await auth();
+    // In NextAuth.js, we use getServerSession for server-side session retrieval
+    const session = await getServerSession(authOptions);
     
     // Debug session information
     if (process.env.NODE_ENV !== "production" && session) {
@@ -183,10 +181,5 @@ declare module "next-auth" {
       role?: string;
       emailVerified?: boolean;
     };
-  }
-  
-  // Make NextAuthResult callable
-  interface NextAuthResult {
-    (): Promise<Session | null>;
   }
 }

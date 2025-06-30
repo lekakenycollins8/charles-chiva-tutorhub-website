@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { loginAdmin } from "@/lib/actions/auth-actions";
+import { signIn } from "next-auth/react";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -43,14 +43,18 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      // Use server action instead of direct API call
-      const result = await loginAdmin({ email, password });
+      // Use NextAuth signIn directly
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false, // Don't redirect automatically, we'll handle it
+      });
       
-      if (result.success) {
+      if (result?.error) {
+        setError(result.error || "Login failed");
+      } else {
         // Redirect to admin dashboard on successful login
         router.push("/admin/dashboard");
-      } else {
-        setError(result.message || "Login failed");
       }
     } catch (err: any) {
       setError(err.message || "An error occurred during login");
