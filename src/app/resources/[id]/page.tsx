@@ -5,9 +5,10 @@ import { formatDistanceToNow } from "date-fns";
 import { ArrowLeft, Download, FileText } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DownloadButton from "@/components/resources/DownloadButton";
 
-export default async function ResourcePage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function ResourcePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { success, resource, message } = await getResource(id);
   
   if (!success || !resource) {
@@ -90,19 +91,10 @@ export default async function ResourcePage({ params }: { params: { id: string } 
                     "use server";
                     await incrementDownloadCount(id);
                   }} className="w-full">
-                    <a 
-                      href={resource.fileUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <DownloadButton 
+                      fileUrl={resource.fileUrl}
                       className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                      onClick={() => {
-                        // This will be called client-side
-                        // The server action above will handle the actual increment
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Resource
-                    </a>
+                    />
                   </form>
                 )}
               </CardFooter>
@@ -127,15 +119,10 @@ export default async function ResourcePage({ params }: { params: { id: string } 
                     "use server";
                     await incrementDownloadCount(id);
                   }} className="w-full">
-                    <a 
-                      href={resource.fileUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <DownloadButton 
+                      fileUrl={resource.fileUrl}
                       className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </a>
+                    />
                   </form>
                 </CardFooter>
               )}

@@ -32,28 +32,24 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Check if the current URL is for an admin page
-  // This is a client component, so we can't use usePathname directly
-  // We'll use a data attribute on the body to handle this with CSS
-  
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <SessionProviderWrapper>
-          <AdminLayoutWrapper>
+        {/* AdminLayoutWrapper will handle rendering children for admin routes */}
+        <AdminLayoutWrapper>
+          {children}
+        </AdminLayoutWrapper>
+        
+        {/* Main site wrapper with navbar and footer for non-admin routes */}
+        <div className="main-site-wrapper">
+          <Navbar />
+          <main className="flex-1">
             {children}
-          </AdminLayoutWrapper>
-          {/* We'll wrap the main site components in a div that we can hide for admin routes */}
-          <div className="main-site-wrapper">
-            <Navbar />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </div>
-        </SessionProviderWrapper>        
+          </main>
+          <Footer />
+        </div>
       </body>
     </html>
   );

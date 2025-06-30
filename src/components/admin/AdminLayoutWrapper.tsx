@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
+import SessionProviderWrapper from '../auth/SessionProviderWrapper';
 
 export default function AdminLayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -23,11 +24,13 @@ export default function AdminLayoutWrapper({ children }: { children: ReactNode }
   return (
     <>
       {isAdminRoute && (
-        <div className="admin-root">
-          {children}
-        </div>
+        <SessionProviderWrapper>
+          <div className="admin-root">
+            {children}
+          </div>
+        </SessionProviderWrapper>
       )}
-      {!isAdminRoute && children}
+      {!isAdminRoute && null}
     </>
   );
 }

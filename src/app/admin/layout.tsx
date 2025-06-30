@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { Geist } from "next/font/google";
-import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper";
 
 
 
@@ -19,9 +18,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="admin-layout">
-      <SessionProviderWrapper>
-        {children}
-      </SessionProviderWrapper>
+      {children}
     </div>
   );
 }
