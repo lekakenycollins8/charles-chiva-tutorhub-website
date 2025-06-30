@@ -32,6 +32,7 @@ export default async function AdminDashboard() {
   let blogCount = 0;
   let messageCount = 0;
   let videoCount = 0;
+  let hasDbError = false;
   
   try {
     resourceCount = await prisma.resource.count();
@@ -40,6 +41,7 @@ export default async function AdminDashboard() {
     videoCount = await prisma.video.count();
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
+    hasDbError = true;
     // Continue with zeros, we'll show an error message
   }
 
@@ -79,11 +81,21 @@ export default async function AdminDashboard() {
       </div>
       
       {/* Error message if database fetch failed */}
-      {(resourceCount === 0 && blogCount === 0 && messageCount === 0 && videoCount === 0) && (
+      {hasDbError && (
         <Alert variant="destructive" className="mb-4">
           <AlertTitle>Database Error</AlertTitle>
           <AlertDescription>
             There was an error fetching dashboard data. Some information may not be displayed correctly.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Message when no data exists yet */}
+      {!hasDbError && resourceCount === 0 && blogCount === 0 && messageCount === 0 && videoCount === 0 && (
+        <Alert className="mb-4">
+          <AlertTitle>No Content Yet</AlertTitle>
+          <AlertDescription>
+            Your dashboard is empty. Start adding resources, blog posts, or videos using the quick actions below.
           </AlertDescription>
         </Alert>
       )}
