@@ -18,12 +18,12 @@ export default async function AdminDashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Admin Sidebar */}
       <AdminSidebar />
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0">
         {/* Admin Header */}
         <AdminHeader />
 
