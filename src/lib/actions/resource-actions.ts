@@ -41,13 +41,35 @@ export async function getResources(filters?: { category?: string; isPaid?: boole
       where,
       orderBy: {
         createdAt: 'desc'
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        fileUrl: true,
+        fileType: true,
+        fileSize: true,
+        isPaid: true,
+        price: true,
+        category: true,
+        downloads: true,
+        createdAt: true,
+        updatedAt: true
       }
     });
     
-    return { success: true, resources };
+    return { 
+      success: true, 
+      data: resources,
+      error: null 
+    };
   } catch (error) {
     console.error("Error fetching resources:", error);
-    return { success: false, message: error instanceof Error ? error.message : "Failed to fetch resources" };
+    return { 
+      success: false, 
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to fetch resources" 
+    };
   }
 }
 
