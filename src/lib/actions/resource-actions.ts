@@ -1,6 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/db";
+import { writeFile } from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 // Type definitions
 export interface ResourceData {
@@ -18,34 +22,28 @@ export interface ResourceData {
 // Function to fetch all resources
 export async function getResources(filters?: { category?: string; isPaid?: boolean }) {
   try {
-    // Build query string from filters
-    let queryString = "";
+    // Build query conditions
+    const where: any = {};
     
     if (filters) {
-      const params = new URLSearchParams();
-      
       if (filters.category) {
-        params.append("category", filters.category);
+        where.category = filters.category;
       }
       
       if (filters.isPaid !== undefined) {
-        params.append("isPaid", filters.isPaid.toString());
+        where.isPaid = filters.isPaid;
       }
-      
-      queryString = params.toString() ? `?${params.toString()}` : "";
     }
     
-    // Fetch resources from API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/resources${queryString}`, {
-      cache: "no-store",
+    // Fetch resources directly from database
+    const resources = await prisma.resource.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch resources: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return { success: true, resources: data.resources };
+    return { success: true, resources };
   } catch (error) {
     console.error("Error fetching resources:", error);
     return { success: false, message: error instanceof Error ? error.message : "Failed to fetch resources" };
@@ -55,17 +53,16 @@ export async function getResources(filters?: { category?: string; isPaid?: boole
 // Function to fetch a single resource
 export async function getResource(id: string) {
   try {
-    // Fetch resource from API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/resources/${id}`, {
-      cache: "no-store",
+    // Fetch resource directly from database
+    const resource = await prisma.resource.findUnique({
+      where: { id }
     });
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch resource: ${response.status}`);
+    if (!resource) {
+      throw new Error(`Resource with ID ${id} not found`);
     }
     
-    const data = await response.json();
-    return { success: true, resource: data.resource };
+    return { success: true, resource };
   } catch (error) {
     console.error(`Error fetching resource ${id}:`, error);
     return { success: false, message: error instanceof Error ? error.message : "Failed to fetch resource" };
@@ -75,58 +72,56 @@ export async function getResource(id: string) {
 // Function to create a new resource
 export async function createResource(formData: FormData) {
   try {
-    // First upload the file
-    const fileFormData = new FormData();
+    // Handle file upload
     const file = formData.get("file") as File;
     
-    if (file) {
-      fileFormData.append("file", file);
-      
-      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/upload`, {
-        method: "POST",
-        body: fileFormData,
-      });
-      
-      if (!uploadResponse.ok) {
-        throw new Error(`Failed to upload file: ${uploadResponse.status}`);
-      }
-      
-      const uploadData = await uploadResponse.json();
-      
-      // Now create the resource with the file URL
-      const resourceData = {
+    if (!file) {
+      throw new Error("No file provided");
+    }
+    
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    try {
+      await writeFile(path.join(uploadsDir, '.gitkeep'), '');
+    } catch (error) {
+      // Directory already exists or cannot be created
+      console.error("Error creating uploads directory:", error);
+    }
+    
+    // Generate a unique filename
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExt}`;
+    const filePath = path.join(uploadsDir, fileName);
+    
+    // Convert file to buffer and save it
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(filePath, buffer);
+    
+    // File metadata
+    const fileUrl = `/uploads/${fileName}`;
+    const fileType = file.type;
+    const fileSize = file.size;
+    
+    // Create resource in database
+    const resource = await prisma.resource.create({
+      data: {
         title: formData.get("title") as string,
         description: formData.get("description") as string,
-        fileUrl: uploadData.fileUrl,
-        fileType: uploadData.fileType,
-        fileSize: uploadData.fileSize,
+        fileUrl,
+        fileType,
+        fileSize,
         isPaid: formData.get("isPaid") === "true",
         price: formData.get("isPaid") === "true" ? parseFloat(formData.get("price") as string) : null,
         category: formData.get("category") as string,
-      };
-      
-      const resourceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/resources`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(resourceData),
-      });
-      
-      if (!resourceResponse.ok) {
-        throw new Error(`Failed to create resource: ${resourceResponse.status}`);
+        downloads: 0
       }
-      
-      const resourceResult = await resourceResponse.json();
-      
-      // Revalidate the resources path to update the UI
-      revalidatePath("/admin/dashboard/resources");
-      revalidatePath("/resources");
-      
-      return { success: true, resource: resourceResult.resource };
-    } else {
-      throw new Error("No file provided");
-    }
+    });
+    
+    // Revalidate the resources path to update the UI
+    revalidatePath("/admin/dashboard/resources");
+    revalidatePath("/resources");
+    
+    return { success: true, resource };
   } catch (error) {
     console.error("Error creating resource:", error);
     return { success: false, message: error instanceof Error ? error.message : "Failed to create resource" };
@@ -136,61 +131,70 @@ export async function createResource(formData: FormData) {
 // Function to update a resource
 export async function updateResource(id: string, formData: FormData) {
   try {
-    // Check if there's a new file to upload
+    // Check if resource exists
+    const existingResource = await prisma.resource.findUnique({
+      where: { id }
+    });
+    
+    if (!existingResource) {
+      throw new Error(`Resource with ID ${id} not found`);
+    }
+    
+    // Check if a new file is being uploaded
     const file = formData.get("file") as File;
-    let fileData = null;
+    let fileUrl = existingResource.fileUrl;
+    let fileType = existingResource.fileType;
+    let fileSize = existingResource.fileSize;
     
     if (file && file.size > 0) {
-      // Upload the new file
-      const fileFormData = new FormData();
-      fileFormData.append("file", file);
-      
-      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/upload`, {
-        method: "POST",
-        body: fileFormData,
-      });
-      
-      if (!uploadResponse.ok) {
-        throw new Error(`Failed to upload file: ${uploadResponse.status}`);
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      try {
+        await writeFile(path.join(uploadsDir, '.gitkeep'), '');
+      } catch (error) {
+        // Directory already exists or cannot be created
+        console.error("Error creating uploads directory:", error);
       }
       
-      fileData = await uploadResponse.json();
+      // Generate a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = path.join(uploadsDir, fileName);
+      
+      // Convert file to buffer and save it
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await writeFile(filePath, buffer);
+      
+      // Update file metadata
+      fileUrl = `/uploads/${fileName}`;
+      fileType = file.type;
+      fileSize = file.size;
     }
     
     // Prepare resource data for update
-    const resourceData: any = {
+    const isPaid = formData.get("isPaid") === "true";
+    const updateData: any = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
-      isPaid: formData.get("isPaid") === "true",
+      fileUrl,
+      fileType,
+      fileSize,
+      isPaid,
       category: formData.get("category") as string,
     };
     
-    // Add file data if a new file was uploaded
-    if (fileData) {
-      resourceData.fileUrl = fileData.fileUrl;
-      resourceData.fileType = fileData.fileType;
-      resourceData.fileSize = fileData.fileSize;
-    }
-    
     // Add price if it's a paid resource
-    if (resourceData.isPaid) {
-      resourceData.price = parseFloat(formData.get("price") as string);
+    if (isPaid) {
+      updateData.price = parseFloat(formData.get("price") as string);
+    } else {
+      updateData.price = null;
     }
     
-    // Update the resource
-    const resourceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/resources/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(resourceData),
+    // Update the resource in database
+    const resource = await prisma.resource.update({
+      where: { id },
+      data: updateData
     });
-    
-    if (!resourceResponse.ok) {
-      throw new Error(`Failed to update resource: ${resourceResponse.status}`);
-    }
-    
-    const resourceResult = await resourceResponse.json();
     
     // Revalidate the resources path to update the UI
     revalidatePath("/admin/dashboard/resources");
@@ -198,7 +202,7 @@ export async function updateResource(id: string, formData: FormData) {
     revalidatePath("/resources");
     revalidatePath(`/resources/${id}`);
     
-    return { success: true, resource: resourceResult.resource };
+    return { success: true, resource };
   } catch (error) {
     console.error(`Error updating resource ${id}:`, error);
     return { success: false, message: error instanceof Error ? error.message : "Failed to update resource" };
@@ -208,14 +212,19 @@ export async function updateResource(id: string, formData: FormData) {
 // Function to delete a resource
 export async function deleteResource(id: string) {
   try {
-    // Delete the resource
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/resources/${id}`, {
-      method: "DELETE",
+    // Check if resource exists
+    const existingResource = await prisma.resource.findUnique({
+      where: { id }
     });
     
-    if (!response.ok) {
-      throw new Error(`Failed to delete resource: ${response.status}`);
+    if (!existingResource) {
+      throw new Error(`Resource with ID ${id} not found`);
     }
+    
+    // Delete the resource from database
+    await prisma.resource.delete({
+      where: { id }
+    });
     
     // Revalidate the resources path to update the UI
     revalidatePath("/admin/dashboard/resources");
@@ -231,35 +240,26 @@ export async function deleteResource(id: string) {
 // Function to increment download count
 export async function incrementDownloadCount(id: string) {
   try {
-    // Get the current resource
-    const { success, resource } = await getResource(id);
-    
-    if (!success || !resource) {
-      throw new Error("Resource not found");
-    }
-    
-    // Update the resource with incremented download count
-    const resourceData = {
-      ...resource,
-      downloads: (resource.downloads || 0) + 1,
-    };
-    
-    // Update the resource
-    const resourceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/resources/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(resourceData),
+    // Check if resource exists
+    const existingResource = await prisma.resource.findUnique({
+      where: { id }
     });
     
-    if (!resourceResponse.ok) {
-      throw new Error(`Failed to update download count: ${resourceResponse.status}`);
+    if (!existingResource) {
+      throw new Error(`Resource with ID ${id} not found`);
     }
+    
+    // Increment download count in database
+    await prisma.resource.update({
+      where: { id },
+      data: {
+        downloads: { increment: 1 }
+      }
+    });
     
     return { success: true };
   } catch (error) {
     console.error(`Error incrementing download count for resource ${id}:`, error);
-    return { success: false, message: error instanceof Error ? error.message : "Failed to update download count" };
+    return { success: false, message: error instanceof Error ? error.message : "Failed to increment download count" };
   }
 }

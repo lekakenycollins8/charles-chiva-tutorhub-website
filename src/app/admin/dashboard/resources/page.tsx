@@ -59,7 +59,7 @@ export default async function ResourcesPage() {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
           {resources.length > 0 ? (
-            resources.map((resource: any) => (
+            resources.map((resource) => (
               <li key={resource.id}>
                 <div className="px-4 py-4 sm:px-6 hover:bg-gray-50">
                   <div className="flex items-center justify-between">
