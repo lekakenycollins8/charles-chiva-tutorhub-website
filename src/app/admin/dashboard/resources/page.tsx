@@ -1,22 +1,98 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { PrismaClient } from "@prisma/client";
-import { FileText, Plus, Filter, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, Plus, Filter, Download, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { getResources } from "@/lib/actions/resource-actions";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function ResourcesPage() {
-  // Fetch resources using the action
-  const { success, resources = [], message } = await getResources();
-  const hasError = !success;
+const ITEMS_PER_PAGE = 10;
+
+export default function ResourcesPage() {
+  const [resources, setResources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'free'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  // Fetch resources with filters
+  const fetchResources = async () => {
+    try {
+      setLoading(true);
+      const filters = {
+        searchQuery: searchQuery || undefined,
+        category: categoryFilter === 'all' ? undefined : categoryFilter,
+        isPaid: paidFilter === 'all' ? undefined : paidFilter === 'paid',
+        page: currentPage,
+        limit: ITEMS_PER_PAGE
+      };
+
+      const { success, data, pagination, error } = await getResources(filters);
+      
+      if (success && data) {
+        setResources(data);
+        setTotalPages(pagination?.totalPages || 1);
+        setTotalItems(pagination?.total || 0);
+        
+        // Extract unique categories
+        const uniqueCategories = [...new Set(data.map((r: any) => r.category))];
+        setCategories(prev => {
+          const newCategories = [...new Set([...prev, ...uniqueCategories])];
+          return newCategories;
+        });
+      } else {
+        setError(error || 'Failed to fetch resources');
+      }
+    } catch (err) {
+      setError('An error occurred while fetching resources');
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchResources();
+  }, [currentPage]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchResources();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, categoryFilter, paidFilter]);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Resources</h1>
-          <p className="text-gray-500">Manage your educational resources and materials.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Resources</h1>
+          <p className="text-sm text-muted-foreground">
+            {loading ? 'Loading resources...' : `Showing ${resources.length} of ${totalItems} resources`}
+          </p>
         </div>
         <Link href="/admin/dashboard/resources/new">
           <Button className="flex items-center gap-2">
@@ -26,91 +102,172 @@ export default async function ResourcesPage() {
         </Link>
       </div>
 
-      {/* Filters and search - to be implemented */}
-      <Card className="bg-white">
+      {/* Search and Filters */}
+      <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <Filter className="h-3.5 w-3.5" />
-              <span>All</span>
-            </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <span>Free</span>
-            </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <span>Paid</span>
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search resources..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select 
+                value={categoryFilter} 
+                onValueChange={setCategoryFilter}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <Filter className="h-4 w-4 mr-2 opacity-50" />
+                  <span>{categoryFilter === 'all' ? 'All Categories' : categoryFilter}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select 
+                value={paidFilter}
+                onValueChange={(value: 'all' | 'paid' | 'free') => setPaidFilter(value)}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-[120px]">
+                  <span>{paidFilter === 'all' ? 'All Types' : paidFilter === 'paid' ? 'Paid' : 'Free'}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </CardContent>
+        </CardHeader>
       </Card>
 
-      {/* Error message if database fetch failed */}
-      {hasError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {message || "There was an error fetching resources. Please try again later."}</span>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md border border-destructive/20">
+          <p>{error}</p>
         </div>
       )}
 
-      {/* Resources list */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {resources.length > 0 ? (
-            resources.map((resource) => (
-              <li key={resource.id}>
-                <div className="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-blue-600" />
+      {/* Resources List */}
+      <Card>
+        <CardContent className="p-0">
+          {loading && resources.length === 0 ? (
+            <div className="space-y-4 p-6">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-4 border-b">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : resources.length > 0 ? (
+            <ul className="divide-y">
+              {resources.map((resource) => (
+                <li key={resource.id} className="hover:bg-muted/50 transition-colors">
+                  <div className="px-6 py-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-start sm:items-center gap-4">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{resource.title}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-1">
+                            {resource.description || 'No description'}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                            <span>{resource.category}</span>
+                            <span>•</span>
+                            <span>{formatDistanceToNow(new Date(resource.createdAt), { addSuffix: true })}</span>
+                            <span>•</span>
+                            <span className="flex items-center">
+                              <Download className="h-3 w-3 mr-1" />
+                              {resource.downloads || 0}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-blue-600">{resource.title}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-md">{resource.description}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${resource.isPaid ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                        {resource.isPaid ? `£${resource.price}` : 'Free'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(resource.createdAt), { addSuffix: true })}
-                      </span>
-                      <span className="text-xs text-gray-500 flex items-center">
-                        <Download className="h-3 w-3 mr-1" />
-                        {resource.downloads}
-                      </span>
-                      <div className="ml-2 flex-shrink-0 flex">
-                        <Link href={`/admin/dashboard/resources/${resource.id}`}>
-                          <Button variant="outline" size="sm">View</Button>
-                        </Link>
-                        <Link href={`/admin/dashboard/resources/${resource.id}/edit`} className="ml-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </Link>
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                        <div className="flex-shrink-0">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            resource.isPaid 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {resource.isPaid ? `£${resource.price}` : 'Free'}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link href={`/admin/dashboard/resources/${resource.id}`}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                              View
+                            </Button>
+                          </Link>
+                          <Link href={`/admin/dashboard/resources/${resource.id}/edit`}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                              Edit
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            ))
-          ) : !hasError ? (
-            <li className="px-4 py-8 sm:px-6 text-center text-gray-500">
-              <FileText className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-              <p className="text-lg font-medium mb-1">No resources found</p>
-              <p className="mb-4">Get started by adding your first educational resource.</p>
-              <Link href="/admin/dashboard/resources/new">
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Resource
-                </Button>
-              </Link>
-            </li>
-          ) : null}
-        </ul>
-      </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">
+              <p>No resources found. Try adjusting your search or create a new resource.</p>
+            </div>
+          )}
+        </CardContent>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <CardFooter className="flex items-center justify-between border-t px-6 py-4">
+            <div className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="ml-2">Previous</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || loading}
+              >
+                <span className="mr-2">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
+        )}
+      </Card>
     </div>
   );
 }

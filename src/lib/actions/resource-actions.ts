@@ -20,28 +20,48 @@ export interface ResourceData {
   category: string;
 }
 
-// Function to fetch all resources
-export async function getResources(filters?: { category?: string; isPaid?: boolean }) {
+// Types for resource filters and pagination
+interface ResourceFilters {
+  category?: string;
+  isPaid?: boolean;
+  searchQuery?: string;
+  page?: number;
+  limit?: number;
+}
+
+// Function to fetch all resources with pagination and filtering
+export async function getResources(filters: ResourceFilters = {}) {
   try {
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const skip = (page - 1) * limit;
+    
     // Build query conditions
     const where: any = {};
     
-    if (filters) {
-      if (filters.category) {
-        where.category = filters.category;
-      }
-      
-      if (filters.isPaid !== undefined) {
-        where.isPaid = filters.isPaid;
-      }
+    if (filters.category) {
+      where.category = filters.category;
     }
     
-    // Fetch resources directly from database
+    if (filters.isPaid !== undefined) {
+      where.isPaid = filters.isPaid;
+    }
+    
+    if (filters.searchQuery) {
+      where.OR = [
+        { title: { contains: filters.searchQuery, mode: 'insensitive' } },
+        { description: { contains: filters.searchQuery, mode: 'insensitive' } },
+        { category: { contains: filters.searchQuery, mode: 'insensitive' } }
+      ];
+    }
+    
+    // Get total count for pagination
+    const total = await prisma.resource.count({ where });
+    
+    // Fetch paginated resources
     const resources = await prisma.resource.findMany({
       where,
-      orderBy: {
-        createdAt: 'desc'
-      },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         title: true,
@@ -55,12 +75,20 @@ export async function getResources(filters?: { category?: string; isPaid?: boole
         downloads: true,
         createdAt: true,
         updatedAt: true
-      }
+      },
+      skip,
+      take: limit
     });
     
     return { 
       success: true, 
       data: resources,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      },
       error: null 
     };
   } catch (error) {
