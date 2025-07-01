@@ -76,27 +76,13 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                 </div>
               </CardContent>
               <CardFooter className="border-t pt-6">
-                {resource.isPaid ? (
-                  <form action="#" className="w-full">
-                    <Button className="w-full flex items-center justify-center gap-2">
-                      <span>Purchase for £{resource.price}</span>
-                      <ArrowLeft className="h-4 w-4 rotate-180" />
-                    </Button>
-                    <p className="text-xs text-center mt-2 text-gray-500">
-                      Secure payment via Stripe. You'll receive immediate access after purchase.
-                    </p>
-                  </form>
-                ) : (
-                  <form action={async () => {
-                    "use server";
-                    await incrementDownloadCount(id);
-                  }} className="w-full">
-                    <DownloadButton 
-                      fileUrl={resource.fileUrl}
-                      className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    />
-                  </form>
-                )}
+                <DownloadButton 
+                  fileUrl={resource.fileUrl}
+                  resourceId={resource.id}
+                  isPaid={resource.isPaid}
+                  price={resource.price}
+                  className="w-full"
+                />
               </CardFooter>
             </Card>
           </div>
@@ -115,15 +101,13 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
               </CardContent>
               {!resource.isPaid && (
                 <CardFooter className="border-t pt-6">
-                  <form action={async () => {
-                    "use server";
-                    await incrementDownloadCount(id);
-                  }} className="w-full">
-                    <DownloadButton 
-                      fileUrl={resource.fileUrl}
-                      className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    />
-                  </form>
+                  <DownloadButton 
+                    fileUrl={resource.fileUrl}
+                    resourceId={resource.id}
+                    isPaid={resource.isPaid}
+                    price={resource.price}
+                    className="w-full"
+                  />
                 </CardFooter>
               )}
             </Card>
