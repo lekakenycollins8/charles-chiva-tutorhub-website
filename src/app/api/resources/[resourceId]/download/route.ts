@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { incrementDownloadCount } from "@/lib/actions/resource-actions";
+import { getResource } from "@/lib/actions/resource-actions";
 
 export async function POST(
   request: Request,
@@ -15,17 +15,20 @@ export async function POST(
       );
     }
     
-    // Increment download count
-    const { success } = await incrementDownloadCount(resourceId);
+    // Get resource to access fileUrl
+    const { success, resource } = await getResource(resourceId);
     
-    if (!success) {
+    if (!success || !resource) {
       return NextResponse.json(
-        { error: "Failed to increment download count" },
-        { status: 500 }
+        { error: "Resource not found" },
+        { status: 404 }
       );
     }
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      fileUrl: resource.fileUrl 
+    });
   } catch (error: any) {
     console.error("Download tracking error:", error);
     return NextResponse.json(

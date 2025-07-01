@@ -1,7 +1,7 @@
 'use client';
 
 import { Download } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 
 interface DownloadButtonProps {
@@ -20,9 +20,28 @@ export default function DownloadButton({
   price
 }: DownloadButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
+
+  useEffect(() => {
+    if (isPaid) {
+      checkPurchaseStatus();
+    }
+  }, [isPaid, resourceId]);
+
+  const checkPurchaseStatus = async () => {
+    try {
+      const response = await fetch(`/api/resources/${resourceId}/purchase-status`, {
+        credentials: 'include'
+      });
+      const { purchased } = await response.json();
+      setHasPurchased(purchased);
+    } catch (error) {
+      console.error('Purchase status check error:', error);
+    }
+  };
 
   const handleDownload = async () => {
-    if (isPaid) {
+    if (isPaid && !hasPurchased) {
       // Initiate Stripe checkout for paid resources
       setLoading(true);
       try {
@@ -46,13 +65,35 @@ export default function DownloadButton({
         setLoading(false);
       }
     } else {
-      // Track download for free resources
+      // Handle download for both free and purchased resources
+      setLoading(true);
       try {
-        await fetch(`/api/resources/${resourceId}/download`, {
-          method: 'POST'
+        const downloadResponse = await fetch(`/api/resources/${resourceId}/download`, {
+          method: 'POST',
+          credentials: 'include'
         });
+        
+        if (downloadResponse.ok) {
+          const { fileUrl } = await downloadResponse.json();
+          
+          // Create a temporary anchor element to trigger download
+          const a = document.createElement('a');
+          a.href = fileUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          
+          // Refresh purchase status if this was a paid resource
+          if (isPaid) {
+            await checkPurchaseStatus();
+          }
+        }
       } catch (error) {
-        console.error('Download tracking error:', error);
+        console.error('Download error:', error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -68,7 +109,9 @@ export default function DownloadButton({
       ) : (
         <>
           <Download className="h-4 w-4 mr-2" />
-          {isPaid ? `Purchase ($${price})` : 'Download Resource'}
+          {isPaid ? 
+            (hasPurchased ? 'Download Resource' : `Purchase ($${price})`) 
+            : 'Download Resource'}
         </>
       )}
     </button>
