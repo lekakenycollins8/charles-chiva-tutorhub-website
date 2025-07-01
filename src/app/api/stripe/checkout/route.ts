@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { incrementDownloadCount } from "@/lib/actions/resource-actions";
+import { generateDownloadToken } from "@/lib/auth-utils";
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +12,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    
+    // Generate a download token
+    const token = await generateDownloadToken(resourceId);
     
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
@@ -27,7 +30,7 @@ export async function POST(request: Request) {
         quantity: 1,
       }],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/resources/${resourceId}?payment=success`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/resources/${resourceId}?payment=success&token=${token}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/resources/${resourceId}?payment=cancel`,
       metadata: {
         resourceId,

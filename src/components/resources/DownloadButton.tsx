@@ -3,6 +3,7 @@
 import { Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface DownloadButtonProps {
   fileUrl: string;
@@ -20,28 +21,32 @@ export default function DownloadButton({
   price
 }: DownloadButtonProps) {
   const [loading, setLoading] = useState(false);
-  const [hasPurchased, setHasPurchased] = useState(false);
+  const [hasValidToken, setHasValidToken] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
-    if (isPaid) {
-      checkPurchaseStatus();
+    // Check for token in URL on component mount
+    const token = searchParams.get('token');
+    const paymentStatus = searchParams.get('payment');
+    
+    if (token && paymentStatus === 'success') {
+      // Store the token in localStorage for future use
+      localStorage.setItem(`download-token-${resourceId}`, token);
+      setHasValidToken(true);
+      
+      // Clean up the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      url.searchParams.delete('payment');
+      window.history.replaceState({}, '', url.toString());
+    } else if (localStorage.getItem(`download-token-${resourceId}`)) {
+      setHasValidToken(true);
     }
-  }, [isPaid, resourceId]);
-
-  const checkPurchaseStatus = async () => {
-    try {
-      const response = await fetch(`/api/resources/${resourceId}/purchase-status`, {
-        credentials: 'include'
-      });
-      const { purchased } = await response.json();
-      setHasPurchased(purchased);
-    } catch (error) {
-      console.error('Purchase status check error:', error);
-    }
-  };
+  }, [resourceId, searchParams]);
 
   const handleDownload = async () => {
-    if (isPaid && !hasPurchased) {
+    if (isPaid && !hasValidToken) {
       // Initiate Stripe checkout for paid resources
       setLoading(true);
       try {
@@ -61,14 +66,16 @@ export default function DownloadButton({
         await stripe?.redirectToCheckout({ sessionId });
       } catch (error) {
         console.error('Checkout error:', error);
-      } finally {
         setLoading(false);
       }
     } else {
       // Handle download for both free and purchased resources
       setLoading(true);
       try {
-        const downloadResponse = await fetch(`/api/resources/${resourceId}/download`, {
+        const token = localStorage.getItem(`download-token-${resourceId}`);
+        const downloadUrl = `/api/resources/${resourceId}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+        
+        const downloadResponse = await fetch(downloadUrl, {
           method: 'POST',
           credentials: 'include'
         });
@@ -84,10 +91,13 @@ export default function DownloadButton({
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          
-          // Refresh purchase status if this was a paid resource
-          if (isPaid) {
-            await checkPurchaseStatus();
+        } else {
+          const error = await downloadResponse.json();
+          console.error('Download error:', error);
+          // If token is invalid, clear it and reload the page
+          if (error.error?.includes('token')) {
+            localStorage.removeItem(`download-token-${resourceId}`);
+            router.refresh();
           }
         }
       } catch (error) {
@@ -99,19 +109,23 @@ export default function DownloadButton({
   };
 
   return (
-    <button 
+    <button
       onClick={handleDownload}
       disabled={loading}
-      className={className}
+      className={`inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${className}`}
     >
       {loading ? (
-        'Processing...'
+        <>
+          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Processing...
+        </>
       ) : (
         <>
-          <Download className="h-4 w-4 mr-2" />
-          {isPaid ? 
-            (hasPurchased ? 'Download Resource' : `Purchase ($${price})`) 
-            : 'Download Resource'}
+          <Download className="-ml-1 mr-2 h-4 w-4" />
+          {isPaid && !hasValidToken ? 'Purchase Now' : 'Download'}
         </>
       )}
     </button>
