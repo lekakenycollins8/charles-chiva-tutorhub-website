@@ -8,9 +8,11 @@ generator client {
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
-// Better-Auth User model
+// Next-Auth User model
 model User {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
