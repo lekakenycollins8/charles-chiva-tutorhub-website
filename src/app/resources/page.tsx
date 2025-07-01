@@ -4,6 +4,7 @@ import { getResources } from "@/lib/actions/resource-actions";
 import { ArrowRight, Download, FileText, Filter } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import type { Resource, ResourceResponse } from "@/types/resource";
 
 // Loading component for Suspense
 function ResourcesLoading() {
@@ -21,14 +22,22 @@ function ResourcesLoading() {
 // Resources list component
 async function ResourcesList({ category }: { category?: string }) {
   // Get resources from the database with optional category filter
-  const { success, resources = [], message } = await getResources(
+  const { success, data: resources = [], error } = await getResources(
     category ? { category } : undefined
-  );
+  ) as ResourceResponse;
   
+  if (!success) {
+    return (
+      <div className="col-span-3 text-center py-12">
+        <p className="text-red-500">{error || 'Failed to load resources'}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {resources.length > 0 ? (
-        resources.map((resource: any) => (
+        resources.map((resource: Resource) => (
           <Card key={resource.id} className="overflow-hidden transition-all hover:shadow-lg">
             <CardHeader className="pb-4">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
