@@ -42,7 +42,7 @@ const CallToAction = () => {
                     </Button>
                   </Link>
                   <Link href="/pricing" passHref>
-                    <Button variant="outline" size="lg" className="border-2 border-white text-white hover:bg-blue-800 transition-all duration-300 px-8 py-6 rounded-xl font-bold text-lg">
+                    <Button size="lg" className="border-2 border-white text-white hover:bg-blue-800 transition-all duration-300 px-8 py-6 rounded-xl font-bold text-lg">
                       View Pricing
                     </Button>
                   </Link>
@@ -58,10 +58,6 @@ const CallToAction = () => {
                 <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10 text-center transform hover:-translate-y-1 transition-all duration-300">
                   <div className="text-4xl font-bold text-blue-300 mb-2">500+</div>
                   <p className="text-blue-100">Students Helped</p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10 text-center transform hover:-translate-y-1 transition-all duration-300">
-                  <div className="text-4xl font-bold text-blue-300 mb-2">10+</div>
-                  <p className="text-blue-100">Expert Tutors</p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10 text-center transform hover:-translate-y-1 transition-all duration-300">
                   <div className="text-4xl font-bold text-blue-300 mb-2">A*</div>
