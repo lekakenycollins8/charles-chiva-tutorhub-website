@@ -3,21 +3,38 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { BlogPost } from "@/types/blog";
+import { getSession } from "@/lib/auth";
 
 export async function createBlogPost(blogPost: BlogPost) {
   try {
+    console.log('Creating blog post with data:', blogPost);
+    
+    // Get the current user session
+    const session = await getSession();
+    if (!session?.user?.id) {
+      throw new Error("User not authenticated");
+    }
+    
+    // Create the blog post with all required fields
     await prisma.blogPost.create({
       data: {
-        id: blogPost.id,
         title: blogPost.title,
         slug: blogPost.slug,
         excerpt: blogPost.excerpt,
         content: blogPost.content,
         coverImage: blogPost.coverImage,
-        publishedAt: blogPost.publishedAt,
-        createdAt: blogPost.createdAt,
-        updatedAt: blogPost.updatedAt,
-        authorId: blogPost.authorId
+        isPublished: blogPost.isPublished || false,
+        isDraft: blogPost.isDraft !== false, // Default to true if not provided
+        publishedAt: blogPost.isPublished ? new Date() : null,
+        // Use the author relation with connect instead of direct authorId
+        author: {
+          connect: {
+            id: session.user.id
+          }
+        },
+        categories: blogPost.categories || [],
+        tags: blogPost.tags || [],
+        relatedPosts: blogPost.relatedPosts || []
       },
     });
     revalidatePath("/admin/dashboard/blogs");
