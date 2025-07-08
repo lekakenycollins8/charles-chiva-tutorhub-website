@@ -20,12 +20,12 @@ const formSchema = z.object({
   slug: z.string().min(1, { message: "Slug is required" }),
   excerpt: z.string().min(1, { message: "Excerpt is required" }),
   content: z.string().min(1, { message: "Content is required" }),
-  coverImage: z.string().optional(),
-  isPublished: z.boolean(),
-  isDraft: z.boolean(),
-  categories: z.array(z.string()).min(1, { message: "At least one category is required" }),
-  tags: z.array(z.string()).optional(),
-  relatedPosts: z.array(z.string()).optional(),
+  coverImage: z.string().optional().nullable(),
+  isPublished: z.boolean().default(false),
+  isDraft: z.boolean().default(true),
+  categories: z.array(z.string()).default([]),
+  tags: z.array(z.string()).optional().default([]),
+  relatedPosts: z.array(z.string()).optional().default([]),
 });
 
 type BlogFormProps = {
@@ -57,10 +57,20 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
     try {
       setLoading(true);
       console.log("Submitting blog post:", values);
-      await onSubmit(values);
+      
+      // Make sure categories, tags, and relatedPosts are arrays
+      const formattedValues = {
+        ...values,
+        categories: Array.isArray(values.categories) ? values.categories : [],
+        tags: Array.isArray(values.tags) ? values.tags : [],
+        relatedPosts: Array.isArray(values.relatedPosts) ? values.relatedPosts : [],
+      };
+      
+      await onSubmit(formattedValues);
       router.push("/admin/dashboard/blogs");
     } catch (error) {
       console.error("Error submitting blog post:", error);
+      alert("Failed to save blog post. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -160,9 +170,26 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
           )}
         />
 
-        <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Save"}
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => router.push("/admin/dashboard/blogs")} 
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={loading}
+            onClick={() => {
+              // Force form validation
+              form.trigger();
+            }}
+          >
+            {loading ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </form>
     </Form>
   );
