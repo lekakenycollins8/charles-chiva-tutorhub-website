@@ -1,6 +1,3 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { getBlogPostBySlug } from '@/lib/actions/blog-actions';
 import { BlogPost } from '@/types/blog';
 import Image from 'next/image';
@@ -9,59 +6,17 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import '@/styles/tiptap.css';
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const { success, data, error } = await getBlogPostBySlug(params.slug);
-        if (success && data) {
-          // Transform post to match BlogPost interface
-          const transformedData = {
-            id: data.id,
-            title: data.title,
-            slug: data.slug,
-            excerpt: data.excerpt || '',
-            content: data.content,
-            coverImage: data.coverImage || undefined,
-            isPublished: data.isPublished,
-            isDraft: data.isDraft,
-            authorId: data.authorId,
-            categories: [],
-            tags: [],
-            relatedPosts: [],
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt
-          };
-          setPost(transformedData);
-        } else {
-          setError(error || 'Blog post not found');
-        }
-      } catch (error) {
-        console.error("Error fetching blog post:", error);
-        setError('Failed to load blog post');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPost();
-  }, [params.slug]);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto py-16 flex justify-center">
-        <Loader2 className="animate-spin h-8 w-8" />
-      </div>
-    );
-  }
-
-  if (error || !post) {
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
+  
+  // Fetch blog post data server-side
+  const { success, data, error: fetchError } = await getBlogPostBySlug(slug);
+  
+  // Handle error case
+  if (!success || !data) {
     return (
       <div className="container mx-auto py-16 px-4 text-center">
-        <h1 className="text-2xl font-bold text-red-500 mb-4">{error || 'Blog post not found'}</h1>
+        <h1 className="text-2xl font-bold text-red-500 mb-4">{fetchError || 'Blog post not found'}</h1>
         <Link href="/blog">
           <Button>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
@@ -70,6 +25,26 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
       </div>
     );
   }
+  
+  // Transform post to match BlogPost interface
+  const post: BlogPost = {
+    id: data.id,
+    title: data.title,
+    slug: data.slug,
+    excerpt: data.excerpt || '',
+    content: data.content,
+    coverImage: data.coverImage || undefined,
+    isPublished: data.isPublished,
+    isDraft: data.isDraft,
+    authorId: data.authorId,
+    categories: [],
+    tags: [],
+    relatedPosts: [],
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt
+  };
+
+  // No need for loading state in server component
 
   return (
     <div className="container mx-auto py-16 px-4">
