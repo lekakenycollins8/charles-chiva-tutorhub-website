@@ -101,11 +101,28 @@ export async function deleteBlogPost(id: string) {
 
 export async function getBlogPostBySlug(slug: string) {
   try {
+    // Normalize the slug to ensure consistent format (replace spaces with dashes)
+    const normalizedSlug = slug.replace(/ /g, '-');
+    
     const post = await prisma.blogPost.findUnique({
-      where: { slug }
+      where: { slug: normalizedSlug }
     });
     
     if (!post) {
+      // Try a more flexible search if exact match fails
+      const similarPosts = await prisma.blogPost.findMany({
+        where: {
+          slug: {
+            contains: normalizedSlug.replace(/-/g, '').toLowerCase()
+          }
+        },
+        take: 1
+      });
+      
+      if (similarPosts.length > 0) {
+        return { success: true, data: similarPosts[0] };
+      }
+      
       return { success: false, error: "Blog post not found" };
     }
     

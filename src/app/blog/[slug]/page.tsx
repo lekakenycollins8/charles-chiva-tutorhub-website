@@ -7,10 +7,12 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import '@/styles/tiptap.css';
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+  // Normalize the slug: decode URL-encoded characters and ensure dashes instead of spaces
+  const rawSlug = params.slug;
+  const normalizedSlug = decodeURIComponent(rawSlug).replace(/ /g, '-');
   
-  // Fetch blog post data server-side
-  const { success, data, error: fetchError } = await getBlogPostBySlug(slug);
+  // Fetch blog post data server-side with normalized slug
+  const { success, data, error: fetchError } = await getBlogPostBySlug(normalizedSlug);
   
   // Handle error case
   if (!success || !data) {
