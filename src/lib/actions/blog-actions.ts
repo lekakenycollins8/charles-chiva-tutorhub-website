@@ -13,8 +13,8 @@ export async function createBlogPost(blogPost: BlogPost) {
         slug: blogPost.slug,
         excerpt: blogPost.excerpt,
         content: blogPost.content,
-        featuredImage: blogPost.coverImage,
-        published: blogPost.isPublished,
+        coverImage: blogPost.coverImage,
+        publishedAt: blogPost.publishedAt,
         createdAt: blogPost.createdAt,
         updatedAt: blogPost.updatedAt,
         authorId: blogPost.authorId
@@ -79,5 +79,22 @@ export async function deleteBlogPost(id: string) {
   } catch (error) {
     console.error("Error deleting blog post:", error);
     return { success: false, error: "Failed to delete blog post" };
+  }
+}
+
+export async function getBlogPostBySlug(slug: string) {
+  try {
+    const post = await prisma.blogPost.findUnique({
+      where: { slug }
+    });
+    
+    if (!post) {
+      return { success: false, error: "Blog post not found" };
+    }
+    
+    return { success: true, data: post };
+  } catch (error) {
+    console.error("Error fetching blog post by slug:", error);
+    return { success: false, error: "Failed to fetch blog post" };
   }
 }
