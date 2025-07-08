@@ -15,7 +15,8 @@ export default function BlogPage() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const { success, data } = await getBlogPosts({ onlyPublished: true });
+        // Use isPublished: true as per the Prisma schema
+        const { success, data } = await getBlogPosts({ isPublished: true });
         if (success && data) {
           // Transform each post to match BlogPost interface
           const transformedData = data.map((post: any) => ({
@@ -24,9 +25,9 @@ export default function BlogPage() {
             slug: post.slug,
             excerpt: post.excerpt || '',
             content: post.content,
-            coverImage: post.featuredImage || undefined,
-            isPublished: post.published,
-            isDraft: !post.published,
+            coverImage: post.coverImage || undefined,
+            isPublished: post.isPublished,
+            isDraft: post.isDraft,
             authorId: post.author,
             categories: [],
             tags: [],
