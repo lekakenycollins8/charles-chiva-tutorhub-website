@@ -1,471 +1,504 @@
-# Chiva TutorHub Chat and Messaging System Plan
+# Chiva TutorHub Contact Section Plan
 
-This document outlines the plan for implementing a chat popup and messaging system for the Chiva TutorHub website, allowing potential clients to easily communicate with the tutoring service.
+This document outlines the plan for implementing a comprehensive contact section for the Chiva TutorHub website, allowing potential clients to easily reach out to the tutoring service.
 
 ## Overview
 
-The chat system will consist of two main components:
-1. A client-facing chat popup widget accessible from any page on the website
-2. An admin interface for managing and responding to messages
+The contact system will consist of two main components:
+1. A comprehensive contact form accessible from the contact page
+2. An admin interface for viewing and managing form submissions
 
 ## Technology Stack
 
 - **Frontend**: React with Next.js 15
 - **UI Components**: shadcn UI components with Tailwind CSS
-- **State Management**: Zustand for local state management
-- **Real-time Communication**: Server-sent events or polling (simpler) or WebSockets (more complex but real-time)
-- **Database**: MongoDB for message storage
+- **Form Handling**: React Hook Form with validation
+- **Email Service**: SendGrid or similar email delivery service
+- **Database**: Prisma with PostgreSQL for storing contact submissions
 
-## Chat Widget Implementation
+## Contact Form Implementation
 
-### User Interface
+### User Interface Components
 
-The chat widget will have the following components:
+The contact form will include the following components:
 
-1. **Chat Button**
-   - Fixed position in the bottom-right corner of the screen
-   - Visible on all pages
-   - Displays a notification badge when there are unread admin responses
+1. **Contact Information Fields**
+   - Name (required)
+   - Email address (required)
+   - Phone number (optional)
+   - Subject dropdown (e.g., General Inquiry, Tutoring Services, Pricing, etc.)
 
-2. **Chat Popup Window**
-   - Opens when the chat button is clicked
-   - Header with tutor name and status indicator
-   - Message history area
-   - Message input field
-   - Send button
-   - Close button
+2. **Message Section**
+   - Text area for detailed message
+   - Character count/limit indicator
+   - Optional file attachment capability
 
-3. **Initial State**
-   - Welcome message from the tutor
-   - Brief instructions on how to use the chat
-   - Optional pre-defined quick questions
+3. **Submission Elements**
+   - Submit button with loading state
+   - CAPTCHA or other anti-spam measure
+   - Privacy policy acknowledgment checkbox
 
-### Functionality
+4. **Confirmation Display**
+   - Success message after submission
+   - Error handling with user-friendly messages
+   - Reference number for follow-up
 
-1. **Message Sending**
-   - Users can type and send messages
-   - Messages are stored in MongoDB
-   - Confirmation when message is sent
+### Additional Contact Information
 
-2. **User Identification**
-   - First-time users will be prompted for their name and email
-   - Information stored in browser localStorage
-   - No account creation required for users
+1. **Business Details**
+   - Email address for direct contact
+   - Phone number (if applicable)
+   - Physical address (if applicable)
+   - Business hours
 
-3. **Message History**
-   - Chat history is preserved between sessions using localStorage
-   - Limited to recent conversations (e.g., last 30 days)
+2. **Social Media Links**
+   - Links to relevant social media profiles
+   - Professional network connections (LinkedIn)
 
-4. **Notifications**
-   - Visual indicator when the admin has responded
-   - Optional browser notifications (with user permission)
+3. **Alternative Contact Methods**
+   - Links to scheduling tools (if applicable)
+   - FAQ section for common questions
 
-## Admin Messaging Interface
+### Form Validation
 
-### User Interface
+1. **Client-side Validation**
+   - Real-time field validation
+   - Format checking for email and phone
+   - Required field highlighting
+   - Character limit enforcement
 
-1. **Message Center Dashboard**
-   - List of all conversations
-   - Unread message indicators
-   - Search and filter options
-   - Sorting by date, read/unread status
+2. **Server-side Validation**
+   - Double-checking all inputs
+   - Spam detection
+   - Rate limiting to prevent abuse
+   - Security checks (XSS prevention, etc.)
 
-2. **Conversation View**
-   - Full message history with a specific user
-   - User information (name, email)
-   - Message input field for responses
-   - Option to mark conversations as resolved
+## Admin Contact Management
 
-3. **Notification Settings**
-   - Email notifications for new messages
-   - Browser notifications
-   - Notification frequency settings
+### Admin Dashboard
 
-### Functionality
+The admin dashboard for managing contact form submissions will include:
 
-1. **Message Management**
-   - View all incoming messages
-   - Respond to messages
-   - Mark messages as read/unread
-   - Archive old conversations
+1. **Submission Management**
+   - List of all contact form submissions
+   - Status indicators (new, in-progress, resolved)
+   - Search and filter capabilities
+   - Sorting by date, subject, status
+
+2. **Submission Details View**
+   - Complete submission information display
+   - Contact details of the submitter
+   - Message content with formatting preserved
+   - File attachments (if applicable)
+
+3. **Response System**
+   - Email response interface
+   - Response templates for common inquiries
+   - Response history tracking
+   - Status update functionality
+
+### Admin Features
+
+1. **Notification System**
+   - Email notifications for new submissions
+   - Browser notifications in admin dashboard
+   - Notification preferences configuration
 
 2. **User Management**
-   - View user information
-   - Add notes to user profiles
-   - Block users if necessary (spam prevention)
+   - Admin user accounts with different permission levels
+   - Activity logging for accountability
+   - Secure authentication
 
-3. **Analytics**
-   - Message volume over time
+3. **Analytics and Reporting**
+   - Submission volume tracking
    - Response time metrics
-   - Common topics or questions
+   - Common inquiry categories
+   - Exportable reports (CSV, PDF)
+
+## Implementation Code Examples
+
+### Contact Form Component
+
+```jsx
+// components/ContactForm.jsx
+"use client";
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from '@/components/ui/use-toast';
+
+const formSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  phone: z.string().optional(),
+  subject: z.string().min(1, { message: 'Please select a subject.' }),
+  message: z.string().min(10, { message: 'Message must be at least 10 characters.' }),
+  privacyPolicy: z.boolean().refine(val => val === true, {
+    message: 'You must agree to the privacy policy.',
+  }),
+});
+
+export default function ContactForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      subject: '',
+      message: '',
+      privacyPolicy: false,
+    },
+  });
+
+  async function onSubmit(data) {
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) throw new Error(result.message || 'Something went wrong');
+      
+      toast({
+        title: 'Message sent!',
+        description: 'We will get back to you as soon as possible.',
+      });
+      
+      form.reset();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label htmlFor="name">Name *</label>
+          <Input
+            id="name"
+            {...form.register('name')}
+            placeholder="Your name"
+          />
+          {form.formState.errors.name && (
+            <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="email">Email *</label>
+          <Input
+            id="email"
+            type="email"
+            {...form.register('email')}
+            placeholder="your.email@example.com"
+          />
+          {form.formState.errors.email && (
+            <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
+          )}
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label htmlFor="phone">Phone (optional)</label>
+          <Input
+            id="phone"
+            {...form.register('phone')}
+            placeholder="Your phone number"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="subject">Subject *</label>
+          <Select onValueChange={(value) => form.setValue('subject', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a subject" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">General Inquiry</SelectItem>
+              <SelectItem value="tutoring">Tutoring Services</SelectItem>
+              <SelectItem value="pricing">Pricing Information</SelectItem>
+              <SelectItem value="feedback">Feedback</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          {form.formState.errors.subject && (
+            <p className="text-sm text-red-500">{form.formState.errors.subject.message}</p>
+          )}
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <label htmlFor="message">Message *</label>
+        <Textarea
+          id="message"
+          {...form.register('message')}
+          placeholder="Your message"
+          rows={6}
+        />
+        {form.formState.errors.message && (
+          <p className="text-sm text-red-500">{form.formState.errors.message.message}</p>
+        )}
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="privacyPolicy"
+          onCheckedChange={(checked) => form.setValue('privacyPolicy', checked)}
+        />
+        <label htmlFor="privacyPolicy" className="text-sm">
+          I agree to the privacy policy and consent to being contacted regarding my inquiry.
+        </label>
+      </div>
+      {form.formState.errors.privacyPolicy && (
+        <p className="text-sm text-red-500">{form.formState.errors.privacyPolicy.message}</p>
+      )}
+      
+      <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
+        {isSubmitting ? 'Sending...' : 'Send Message'}
+      </Button>
+    </form>
+  );
+}
+```
+
+### API Route for Contact Form
+
+```js
+// app/api/contact/route.js
+import { NextResponse } from 'next/server';
+import { Resend } from 'resend';
+import { prisma } from '@/lib/prisma';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { name, email, phone, subject, message } = body;
+    
+    // Store in database
+    const submission = await prisma.contactSubmission.create({
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        subject,
+        message,
+        status: 'NEW',
+      },
+    });
+    
+    // Send notification email
+    await resend.emails.send({
+      from: 'contact@chivatutorhub.com',
+      to: process.env.ADMIN_EMAIL,
+      subject: `New Contact Form Submission: ${subject}`,
+      html: `
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message}</p>
+        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/dashboard/contacts/${submission.id}">View in Admin Dashboard</a></p>
+      `,
+    });
+    
+    // Send confirmation email to user
+    await resend.emails.send({
+      from: 'contact@chivatutorhub.com',
+      to: email,
+      subject: 'We received your message - Chiva TutorHub',
+      html: `
+        <h2>Thank you for contacting Chiva TutorHub!</h2>
+        <p>We have received your message and will get back to you as soon as possible.</p>
+        <p>Your reference number is: ${submission.id}</p>
+        <p>Best regards,<br>The Chiva TutorHub Team</p>
+      `,
+    });
+    
+    return NextResponse.json({ success: true, id: submission.id });
+  } catch (error) {
+    console.error('Contact form error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to send message' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## Testing and Deployment
+
+### Testing Checklist
+
+1. **Functionality Testing**
+   - Contact form validation works correctly
+   - Form submissions are stored in the database
+   - Email notifications are sent to admin
+   - Confirmation emails are sent to users
+   - Form handles errors gracefully
+
+2. **UI/UX Testing**
+   - Form is responsive on all devices
+   - Error messages are clear and helpful
+   - Success messages are displayed properly
+   - Form fields are accessible and properly labeled
+   - Loading states provide feedback during submission
+
+3. **Admin Interface Testing**
+   - Admin can view all submissions
+   - Filtering and sorting work correctly
+   - Admin can respond to submissions
+   - Status updates are saved correctly
+   - Analytics data is accurate
+
+### Deployment Steps
+
+1. **Development Implementation**
+   - Create contact form components
+   - Set up API routes and database schema
+   - Implement email notification system
+   - Build admin interface for submissions
+
+2. **Staging Deployment**
+   - Deploy to staging environment
+   - Test form submissions end-to-end
+   - Verify email delivery
+   - Test admin interface functionality
+
+3. **Production Deployment**
+   - Deploy to production environment
+   - Monitor form submissions
+   - Verify email deliverability
+   - Train admin users on submission management
 
 ## Database Schema
 
 ```prisma
-model Message {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  conversationId String   @db.ObjectId
-  sender        String   // "user" or "admin"
-  content       String
-  timestamp     DateTime @default(now())
-  isRead        Boolean  @default(false)
-  
-  conversation  Conversation @relation(fields: [conversationId], references: [id])
+model ContactSubmission {
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  subject       String
+  message       String   @db.Text
+  status        String   @default("NEW") // NEW, IN_PROGRESS, RESOLVED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  responses     ContactResponse[]
 }
 
-model Conversation {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  userName      String
-  userEmail     String
-  startedAt     DateTime @default(now())
-  lastMessageAt DateTime @default(now())
-  isResolved    Boolean  @default(false)
+model ContactResponse {
+  id            String   @id @default(cuid())
+  submissionId  String
+  message       String   @db.Text
+  sentAt        DateTime @default(now())
+  sentBy        String   // admin user ID
+  sentByName    String   // admin user name
   
-  messages      Message[]
-}
-```
-
-## API Endpoints
-
-### User-Facing Endpoints
-
-```
-POST /api/messages
-- Create a new message in a conversation
-- Body: { conversationId, content }
-
-GET /api/messages/:conversationId
-- Get all messages for a specific conversation
-- Query params: { limit, offset }
-
-POST /api/conversations
-- Start a new conversation
-- Body: { userName, userEmail }
-```
-
-### Admin-Only Endpoints
-
-```
-GET /api/admin/conversations
-- Get all conversations
-- Query params: { limit, offset, isResolved, search }
-
-PUT /api/admin/messages/:id/read
-- Mark a message as read
-- No body required
-
-POST /api/admin/messages
-- Send a message as admin
-- Body: { conversationId, content }
-
-PUT /api/admin/conversations/:id/resolve
-- Mark a conversation as resolved
-- Body: { isResolved }
-```
-
-## Implementation Approach
-
-### Phase 1: Basic Messaging
-
-1. **Setup Database Models**
-   - Create Conversation and Message models
-   - Set up API endpoints
-
-2. **Implement Chat Widget UI**
-   - Create chat button component
-   - Build chat popup window
-   - Implement message input and display
-
-3. **Implement Basic Admin Interface**
-   - Create conversation list view
-   - Build message thread view
-   - Implement admin response functionality
-
-### Phase 2: Enhanced Features
-
-1. **User Identification**
-   - Add user information collection
-   - Implement localStorage for persistence
-
-2. **Message History**
-   - Implement conversation retrieval
-   - Add pagination for long conversations
-
-3. **Admin Features**
-   - Add search and filtering
-   - Implement conversation resolution
-   - Add user notes functionality
-
-### Phase 3: Real-time Features
-
-1. **Real-time Updates**
-   - Implement polling or WebSockets
-   - Add typing indicators
-
-2. **Notifications**
-   - Add browser notifications
-   - Implement email notifications for admin
-
-3. **Analytics**
-   - Track message metrics
-   - Generate basic reports
-
-## Technical Considerations
-
-### State Management
-
-```javascript
-// Example Zustand store for chat state
-import create from 'zustand';
-
-const useChatStore = create((set) => ({
-  isOpen: false,
-  messages: [],
-  currentConversation: null,
-  userInfo: null,
-  
-  toggleChat: () => set((state) => ({ isOpen: !state.isOpen })),
-  
-  setUserInfo: (userInfo) => set({ userInfo }),
-  
-  setCurrentConversation: (conversation) => set({ currentConversation: conversation }),
-  
-  addMessage: (message) => set((state) => ({
-    messages: [...state.messages, message]
-  })),
-  
-  loadMessages: (messages) => set({ messages }),
-}));
-
-export default useChatStore;
-```
-
-### API Calls
-
-```javascript
-// Example API functions
-export async function sendMessage(conversationId, content) {
-  const response = await fetch('/api/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ conversationId, content }),
-  });
-  
-  return response.json();
-}
-
-export async function getMessages(conversationId) {
-  const response = await fetch(`/api/messages/${conversationId}`);
-  return response.json();
-}
-
-export async function startConversation(userName, userEmail) {
-  const response = await fetch('/api/conversations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userName, userEmail }),
-  });
-  
-  return response.json();
+  submission    ContactSubmission @relation(fields: [submissionId], references: [id])
 }
 ```
 
-### Real-time Updates
+This schema defines two main models:
 
-For a simple implementation, polling can be used:
+1. **ContactSubmission**: Stores all contact form submissions with fields for the submitter's information, message content, and status tracking.
 
-```javascript
-// Example polling implementation
-function useMessagePolling(conversationId, interval = 5000) {
-  const [messages, setMessages] = useState([]);
-  
-  useEffect(() => {
-    if (!conversationId) return;
-    
-    const fetchMessages = async () => {
-      const data = await getMessages(conversationId);
-      setMessages(data);
-    };
-    
-    // Initial fetch
-    fetchMessages();
-    
-    // Set up polling
-    const pollInterval = setInterval(fetchMessages, interval);
-    
-    return () => clearInterval(pollInterval);
-  }, [conversationId, interval]);
-  
-  return messages;
-}
-```
-
-For a more sophisticated approach, WebSockets can be used with a library like Socket.io.
-
-## UI Components
-
-### Chat Button
-
-```jsx
-// components/chat/ChatButton.jsx
-import { useState, useEffect } from 'react';
-import useChatStore from '@/store/chatStore';
-
-export default function ChatButton() {
-  const { toggleChat, unreadCount } = useChatStore();
-  
-  return (
-    <button
-      onClick={toggleChat}
-      className="fixed bottom-6 right-6 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg z-50"
-    >
-      <ChatIcon className="w-6 h-6" />
-      {unreadCount > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
-          {unreadCount}
-        </span>
-      )}
-    </button>
-  );
-}
-```
-
-### Chat Window
-
-```jsx
-// components/chat/ChatWindow.jsx
-import { useState, useEffect, useRef } from 'react';
-import useChatStore from '@/store/chatStore';
-
-export default function ChatWindow() {
-  const { isOpen, messages, currentConversation, userInfo, addMessage } = useChatStore();
-  const [input, setInput] = useState('');
-  const messagesEndRef = useRef(null);
-  
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-  
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    
-    // Add message to UI immediately
-    const newMessage = {
-      id: Date.now().toString(),
-      sender: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-    
-    addMessage(newMessage);
-    setInput('');
-    
-    // Send to server
-    if (currentConversation) {
-      await sendMessage(currentConversation.id, input);
-    } else {
-      // Start new conversation
-      const conversation = await startConversation(userInfo.name, userInfo.email);
-      setCurrentConversation(conversation);
-      await sendMessage(conversation.id, input);
-    }
-  };
-  
-  if (!isOpen) return null;
-  
-  return (
-    <div className="fixed bottom-20 right-6 w-80 h-96 bg-white rounded-lg shadow-xl z-50 flex flex-col">
-      <div className="p-4 bg-blue-500 text-white rounded-t-lg flex justify-between items-center">
-        <h3 className="font-bold">Chat with Chiva TutorHub</h3>
-        <button onClick={toggleChat}>×</button>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`mb-2 p-2 rounded ${
-              message.sender === 'user'
-                ? 'bg-blue-100 ml-auto'
-                : 'bg-gray-100 mr-auto'
-            }`}
-          >
-            {message.content}
-            <div className="text-xs text-gray-500 mt-1">
-              {new Date(message.timestamp).toLocaleTimeString()}
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-      
-      <div className="p-4 border-t">
-        <div className="flex">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type your message..."
-            className="flex-1 p-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={handleSend}
-            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-r-md"
-          >
-            Send
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
+2. **ContactResponse**: Tracks admin responses to each submission, maintaining a history of all communication.
 
 ## Security Considerations
 
-1. **Input Validation**
-   - Sanitize all user inputs to prevent XSS attacks
-   - Validate email addresses and other user information
+1. **Input Validation and Sanitization**
+   - Validate all form inputs on both client and server sides
+   - Implement strong validation rules using Zod schema
+   - Sanitize message content to prevent XSS attacks
+   - Use prepared statements for database queries via Prisma
 
-2. **Rate Limiting**
-   - Implement rate limiting to prevent spam
-   - Limit the number of messages a user can send in a given time period
+2. **Rate Limiting and Spam Prevention**
+   - Implement rate limiting on the contact form API endpoint
+   - Add CAPTCHA or honeypot fields to prevent bot submissions
+   - Monitor for suspicious activity patterns
+   - Implement IP-based blocking for repeated abuse
 
-3. **Admin Authentication**
-   - Secure admin routes with proper authentication
-   - Implement role-based access control
+3. **Authentication and Authorization**
+   - Secure admin dashboard with proper authentication
+   - Implement role-based access for contact submission management
+   - Use secure sessions with appropriate timeout settings
+   - Require re-authentication for sensitive operations
 
-4. **Data Protection**
-   - Store user information securely
-   - Implement data retention policies
-   - Comply with relevant privacy regulations
+4. **Data Protection and Privacy**
+   - Store only necessary personal information
+   - Implement proper data retention and deletion policies
+   - Encrypt sensitive data in transit (HTTPS) and at rest
+   - Comply with privacy regulations (GDPR, CCPA)
+   - Include clear privacy policy references in the form
+
+5. **Email Security**
+   - Verify email sending domain with SPF, DKIM, and DMARC
+   - Use secure email service providers (Resend, SendGrid, etc.)
+   - Implement email templates with proper sanitization
+   - Monitor email delivery and bounce rates
 
 ## Testing Plan
 
 1. **Unit Testing**
-   - Test individual components (chat button, window, message display)
-   - Test API functions
+   - Test form validation logic
+   - Test API endpoints for submission handling
+   - Test email sending functionality
+   - Test database operations for contact submissions
 
 2. **Integration Testing**
-   - Test the full message flow from user to admin and back
-   - Test persistence of conversations
+   - Test the complete form submission flow
+   - Test admin dashboard functionality
+   - Test email notification delivery
+   - Verify database records match submitted data
 
-3. **User Testing**
-   - Test on different devices and browsers
-   - Test with real users to gather feedback
+3. **User Acceptance Testing**
+   - Test form with various input scenarios
+   - Verify form accessibility compliance
+   - Test on multiple browsers and devices
+   - Gather feedback on form usability and clarity
 
 ## Deployment Considerations
 
-1. **Performance**
-   - Optimize message loading for speed
-   - Implement pagination for long conversations
+1. **Server Requirements**
+   - Node.js environment for Next.js
+   - PostgreSQL database with Prisma ORM
+   - Email service provider account (Resend, SendGrid, etc.)
 
-2. **Scalability**
-   - Design the system to handle multiple concurrent users
-   - Consider database indexing for faster queries
+2. **Environment Variables**
+   - Database connection string
+   - Email service API keys
+   - Admin notification email address
+   - Website URL for email links
 
-3. **Monitoring**
-   - Set up logging for errors
-   - Monitor message volume and response times
+3. **Monitoring and Maintenance**
+   - Set up error logging for form submissions
+   - Monitor email delivery rates
+   - Track form submission analytics
+   - Regular database backups for contact submissions

@@ -46,15 +46,17 @@
 - Implement blog listing and individual post pages
 - Add rich text editor for content creation
 
-**Days 4-5: Chat System**
-- Implement chat popup widget
-- Create messaging data model
-- Develop admin interface for message management
-- Set up real-time or polling-based message retrieval
+**Days 4-5: Contact Section**
+- Implement a comprehensive contact form with validation
+- Set up email notification system for form submissions using Resend
+- Create admin interface to view and manage contact submissions
+- Add contact information display (email, phone, address, business hours)
+- Implement spam prevention measures (CAPTCHA, rate limiting)
 
 **Weekend: Integration and Testing**
-- Integrate blog and chat systems with main website
-- Test functionality across different devices
+- Integrate blog and contact form systems with main website
+- Test form submission and email notification functionality
+- Test admin contact management interface
 - Document completed features
 - Plan for final week implementation
 
