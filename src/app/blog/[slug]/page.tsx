@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Tag, FolderOpen, Link2, Calendar, Clock, Share2, Bookmark, Facebook, Twitter, Linkedin } from 'lucide-react';
+import { ArrowLeft, Tag, FolderOpen, Link2, Calendar, Clock, Share2, Bookmark, Facebook, Twitter, Linkedin, Eye, User, Heart, MessageCircle } from 'lucide-react';
+import ScrollToTopButton from '@/components/blog/ScrollToTopButton';
 import '@/styles/tiptap.css';
 
 // Related Post Card Component
@@ -24,21 +25,28 @@ async function RelatedPostCard({ postId }: { postId: string }) {
   }
   
   return (
-    <Card className="h-full hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <Link href={`/blog/${relatedPost.slug}`} className="no-underline">
+    <Card className="group h-full hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50 overflow-hidden">
+      <CardContent className="p-0">
+        <Link href={`/blog/${relatedPost.slug}`} className="block">
           {relatedPost.coverImage && (
-            <div className="relative w-full h-40 mb-4 overflow-hidden rounded-md">
+            <div className="relative w-full h-48 overflow-hidden">
               <Image 
                 src={relatedPost.coverImage} 
                 alt={relatedPost.title}
                 fill
-                className="object-cover"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
           )}
-          <h4 className="font-semibold text-lg mb-2 hover:text-blue-600 transition-colors">{relatedPost.title}</h4>
-          <p className="text-sm text-gray-500 line-clamp-2">{relatedPost.excerpt}</p>
+          <div className="p-6">
+            <h4 className="font-bold text-lg mb-2 text-gray-900 group-hover:text-blue-600 transition-colors duration-300 line-clamp-2">
+              {relatedPost.title}
+            </h4>
+            <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed">
+              {relatedPost.excerpt}
+            </p>
+          </div>
         </Link>
       </CardContent>
     </Card>
@@ -60,13 +68,21 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   // Handle error case
   if (!success || !data) {
     return (
-      <div className="container mx-auto py-16 px-4 text-center">
-        <h1 className="text-2xl font-bold text-red-500 mb-4">{fetchError || 'Blog post not found'}</h1>
-        <Link href="/blog">
-          <Button>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
-          </Button>
-        </Link>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-xl">!</span>
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Post Not Found</h1>
+          <p className="text-gray-600 mb-8">{fetchError || 'The blog post you\'re looking for doesn\'t exist or has been moved.'}</p>
+          <Link href="/blog">
+            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -108,12 +124,24 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero Section with Cover Image */}
-      <div className="relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      {/* Floating Navigation */}
+      <div className="fixed top-6 left-6 z-50">
+        <Link href="/blog">
+          <Button 
+            variant="outline" 
+            className="bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-full px-4 py-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+        </Link>
+      </div>
+
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
         {post.coverImage ? (
-          <div className="relative h-[50vh] min-h-[400px] w-full">
-            <div className="absolute inset-0 bg-black/40 z-10"></div>
+          <div className="relative h-[70vh] min-h-[500px] w-full">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10"></div>
             <Image 
               src={post.coverImage} 
               alt={post.title}
@@ -121,125 +149,167 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               priority
               className="object-cover"
             />
-            <div className="absolute inset-0 z-20 flex items-center">
-              <div className="container mx-auto px-4">
-                <div className="max-w-3xl mx-auto text-white">
-                  <Link href="/blog" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
-                  </Link>
-                  <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">{post.title}</h1>
+            <div className="absolute inset-0 z-20 flex items-end">
+              <div className="container mx-auto px-4 pb-16">
+                <div className="max-w-4xl mx-auto text-white">
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {post.categories && post.categories.slice(0, 2).map((category, index) => (
+                      <Badge key={`cat-${index}`} className="bg-white/20 text-white border-white/30 backdrop-blur-sm hover:bg-white/30 transition-colors">
+                        <FolderOpen className="h-3 w-3 mr-1" />
+                        {category}
+                      </Badge>
+                    ))}
+                  </div>
                   
-                  <div className="flex items-center text-white/80 mt-6">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span>{formatDate(post.createdAt)}</span>
-                    <span className="mx-3">•</span>
-                    <Clock className="h-4 w-4 mr-2" />
-                    <span>{calculateReadingTime(post.content)} min read</span>
+                  <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
+                    {post.title}
+                  </h1>
+                  
+                  <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed max-w-3xl">
+                    {post.excerpt}
+                  </p>
+                  
+                  <div className="flex items-center text-white/80 gap-6">
+                    <div className="flex items-center">
+                      <Calendar className="h-5 w-5 mr-2" />
+                      <span className="font-medium">{formatDate(post.createdAt)}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="h-5 w-5 mr-2" />
+                      <span className="font-medium">{calculateReadingTime(post.content)} min read</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-20 px-4 relative">
-            <div className="container mx-auto">
-              <div className="max-w-3xl mx-auto text-white">
-                <Link href="/blog" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
-                </Link>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">{post.title}</h1>
+          <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 py-24 px-4 overflow-hidden">
+            {/* Animated background elements */}
+            <div className="absolute inset-0">
+              <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full animate-pulse"></div>
+              <div className="absolute bottom-10 right-20 w-20 h-20 bg-white/10 rounded-full animate-pulse delay-1000"></div>
+              <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-white/10 rounded-full animate-pulse delay-500"></div>
+            </div>
+            
+            <div className="container mx-auto relative z-10">
+              <div className="max-w-4xl mx-auto text-white text-center">
+                <div className="flex flex-wrap gap-2 mb-6 justify-center">
+                  {post.categories && post.categories.slice(0, 2).map((category, index) => (
+                    <Badge key={`cat-${index}`} className="bg-white/20 text-white border-white/30 backdrop-blur-sm hover:bg-white/30 transition-colors">
+                      <FolderOpen className="h-3 w-3 mr-1" />
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
                 
-                <div className="flex items-center text-white/80 mt-6">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>{formatDate(post.createdAt)}</span>
-                  <span className="mx-3">•</span>
-                  <Clock className="h-4 w-4 mr-2" />
-                  <span>{calculateReadingTime(post.content)} min read</span>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
+                  {post.title}
+                </h1>
+                
+                <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed max-w-3xl mx-auto">
+                  {post.excerpt}
+                </p>
+                
+                <div className="flex items-center text-white/80 gap-6 justify-center">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    <span className="font-medium">{formatDate(post.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2" />
+                    <span className="font-medium">{calculateReadingTime(post.content)} min read</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         )}
       </div>
-      
-      <div className="container mx-auto px-4 py-12">
-        <article className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-10">
-          {/* Tags and Categories at the top */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {post.categories && post.categories.length > 0 && post.categories.map((category, index) => (
-              <Badge key={`cat-${index}`} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                <FolderOpen className="h-3 w-3 mr-1" />
-                {category}
-              </Badge>
-            ))}
-            
-            {post.tags && post.tags.length > 0 && post.tags.map((tag, index) => (
-              <Badge key={`tag-${index}`} variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                <Tag className="h-3 w-3 mr-1" />
-                {tag}
-              </Badge>
-            ))}
-          </div>
-          
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-4xl mx-auto">
           {/* Article Content */}
-          <div className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:my-4 prose-p:text-gray-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-hr:my-8">
-            <div 
-              className="ProseMirror" 
-              dangerouslySetInnerHTML={{ __html: post.content }} 
-            />
-          </div>
-          
-          {/* Tags and Categories Section */}
-          <div className="mt-12">
-            <Separator className="my-8" />
+          <article className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12 border border-gray-100">
+            {/* Social Share Bar */}
+            <div className="flex items-center justify-between mb-8 p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm font-medium">2.3k views</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Heart className="h-4 w-4" />
+                  <span className="text-sm font-medium">156 likes</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-600 mr-2">Share:</span>
+                <Button variant="outline" size="sm" className="rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                  <Twitter className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" className="rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                  <Facebook className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" className="rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                  <Linkedin className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
             
+            {/* Article Content */}
+            <div className="prose prose-xl max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-xl prose-hr:my-12 prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:p-6 prose-blockquote:rounded-r-lg prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:rounded-xl">
+              <div 
+                className="ProseMirror" 
+                dangerouslySetInnerHTML={{ __html: post.content }} 
+              />
+            </div>
+            
+            {/* Tags Section */}
             {post.tags && post.tags.length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Tag className="h-4 w-4" />
-                  <h3 className="text-lg font-semibold">Tags</h3>
+              <div className="mt-12 pt-8 border-t border-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <Tag className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Tags</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {post.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary">{tag}</Badge>
+                    <Badge key={index} variant="secondary" className="bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 px-3 py-1 cursor-pointer">
+                      #{tag}
+                    </Badge>
                   ))}
                 </div>
               </div>
             )}
-            
-            {post.categories && post.categories.length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <FolderOpen className="h-4 w-4" />
-                  <h3 className="text-lg font-semibold">Categories</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {post.categories.map((category, index) => (
-                    <Badge key={index} variant="secondary">{category}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        
+          </article>
+
           {/* Related Posts Section */}
           {post.relatedPosts && post.relatedPosts.length > 0 && (
-            <div className="mt-12">
-              <Separator className="my-8" />
-              <div className="flex items-center gap-2 mb-6">
-                <Link2 className="h-4 w-4" />
-                <h3 className="text-xl font-semibold">Related Posts</h3>
+            <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+                  <Link2 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">Related Articles</h3>
+                  <p className="text-gray-600">Continue your reading journey</p>
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {post.relatedPosts.map((relatedPostId) => (
                   <RelatedPostCard key={relatedPostId} postId={relatedPostId} />
                 ))}
               </div>
             </div>
           )}
-        </article>
+        </div>
       </div>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTopButton />
     </div>
   );
 }

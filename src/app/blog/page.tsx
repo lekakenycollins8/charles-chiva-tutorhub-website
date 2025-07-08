@@ -88,7 +88,7 @@ export default function BlogPage() {
       {/* Hero Section */}
       <div className="relative">
         {/* Background image or pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-900 opacity-90"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-900 opacity-90"></div>
         
         {/* Animated wave pattern */}
         <div className="absolute inset-0 overflow-hidden">

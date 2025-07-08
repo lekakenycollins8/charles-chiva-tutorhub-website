@@ -105,16 +105,43 @@ export default function ResourcesPage() {
   ];
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Educational Resources</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Browse our collection of high-quality educational materials to enhance your learning experience.
-            From comprehensive study guides to practice exams, we've got you covered.
-          </p>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+        
+        {/* Decorative elements */}
+        <div className="absolute inset-0">
+          {/* Abstract geometric shapes */}
+          <div className="absolute top-20 left-10 w-40 h-40 bg-white opacity-10 rounded-lg transform rotate-12"></div>
+          <div className="absolute bottom-10 right-20 w-60 h-60 bg-white opacity-10 rounded-full"></div>
+          <div className="absolute top-1/4 right-1/4 w-20 h-20 bg-white opacity-10 transform rotate-45"></div>
+          
+          {/* Animated dots pattern */}
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundSize: '20px 20px'
+          }}></div>
         </div>
+        
+        {/* Content */}
+        <div className="container mx-auto px-4 py-28 relative z-10">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm p-8 rounded-xl border border-white/20 shadow-xl">
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+                Educational Resources
+              </h1>
+              <p className="text-xl text-white/90 leading-relaxed">
+                Discover premium learning materials crafted by expert educators to accelerate your academic journey and deepen your understanding.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {/* Main Content Container */}
+      <div className="container mx-auto px-4 py-12">
         {/* Filters */}
         <div className="mb-8">
           <Card className="bg-white">
