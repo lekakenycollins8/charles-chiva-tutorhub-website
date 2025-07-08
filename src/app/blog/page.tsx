@@ -6,7 +6,8 @@ import { BlogPost } from '@/types/blog';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Tag, FolderOpen } from 'lucide-react';
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -29,9 +30,9 @@ export default function BlogPage() {
             isPublished: post.isPublished,
             isDraft: post.isDraft,
             authorId: post.author,
-            categories: [],
-            tags: [],
-            relatedPosts: [],
+            categories: post.categories || [],
+            tags: post.tags || [],
+            relatedPosts: post.relatedPosts || [],
             createdAt: post.createdAt,
             updatedAt: post.updatedAt
           }));
@@ -81,9 +82,39 @@ export default function BlogPage() {
                   <h2 className="text-xl font-semibold">{post.title}</h2>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 line-clamp-3">{post.excerpt}</p>
+                  <p className="text-gray-600 line-clamp-3 mb-4">{post.excerpt}</p>
+                  
+                  {/* Tags */}
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <div className="flex items-center mr-1">
+                        <Tag className="h-3 w-3 mr-1" />
+                      </div>
+                      {post.tags.slice(0, 3).map((tag, index) => (
+                        <Badge key={index} variant="blue" className="text-xs">{tag}</Badge>
+                      ))}
+                      {post.tags.length > 3 && (
+                        <span className="text-xs text-gray-500">+{post.tags.length - 3} more</span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Categories */}
+                  {post.categories && post.categories.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <div className="flex items-center mr-1">
+                        <FolderOpen className="h-3 w-3 mr-1" />
+                      </div>
+                      {post.categories.slice(0, 2).map((category, index) => (
+                        <Badge key={index} variant="green" className="text-xs">{category}</Badge>
+                      ))}
+                      {post.categories.length > 2 && (
+                        <span className="text-xs text-gray-500">+{post.categories.length - 2} more</span>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
-                <CardFooter className="text-sm text-gray-500">
+                <CardFooter className="text-sm text-gray-500 border-t pt-3">
                   {new Date(post.createdAt).toLocaleDateString()}
                 </CardFooter>
               </Card>
