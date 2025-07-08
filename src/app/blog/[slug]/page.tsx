@@ -138,7 +138,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             </Button>
           </Link>
           
-          <SocialShareButtons url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://tutorhub.com'}/blog/${post.slug}`} title={post.title} />
+          <SocialShareButtons url={`https://chivatutorhub.com/blog/${post.slug}`} title={post.title} />
         </div>
       </header>
 
