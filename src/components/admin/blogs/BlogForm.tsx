@@ -413,7 +413,7 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
                 {loadingPosts ? (
                   <div className="text-center p-4">Loading posts...</div>
                 ) : (
-                  <ScrollArea className="h-60 border rounded-md p-2">
+                  <div className="h-60 border rounded-md p-2 overflow-y-auto">
                     <div className="space-y-2">
                       {availablePosts.length === 0 ? (
                         <p className="text-center text-muted-foreground p-4">No other posts available</p>
@@ -438,7 +438,7 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
                         })
                       )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 )}
                 <p className="text-xs text-muted-foreground">
                   Click on a post to select/deselect it as related
