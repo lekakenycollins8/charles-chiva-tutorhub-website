@@ -25,6 +25,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+  blogs         Blog[]
+  blogPosts     BlogPost[]
 }
 
 // Better-Auth Account model for OAuth providers
@@ -84,16 +86,22 @@ model Resource {
 
 // Blog model for blog posts
 model Blog {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  slug          String    @unique
-  content       String
-  excerpt       String?
-  featuredImage String?
-  author        String
-  published     Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(cuid()) @map("_id")
+  title        String
+  slug         String   @unique
+  excerpt      String
+  content      String
+  coverImage   String?
+  isPublished  Boolean  @default(false)
+  isDraft      Boolean  @default(true)
+  publishedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id])
+  categories   String[]
+  tags         String[]
+  relatedPosts String[]
 }
 
 // Message model for client messages
@@ -145,4 +153,24 @@ model Payment {
   customerName  String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+// Blog Post Model
+model BlogPost {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String    @unique
+  excerpt     String
+  content     String
+  coverImage  String?
+  isPublished Boolean   @default(false)
+  isDraft     Boolean   @default(true)
+  publishedAt DateTime?
+  authorId    String    @db.ObjectId
+  author      User      @relation(fields: [authorId], references: [id])
+  categories  String[]
+  tags        String[]
+  relatedPosts String[] @db.ObjectId
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

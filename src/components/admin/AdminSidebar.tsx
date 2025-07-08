@@ -37,7 +37,7 @@ export default function AdminSidebar() {
     },
     {
       name: "Blog",
-      href: "/admin/dashboard/blog",
+      href: "/admin/dashboard/blogs",
       icon: <BookOpen className="h-5 w-5" />,
     },
     {
