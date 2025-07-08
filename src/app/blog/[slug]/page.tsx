@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Tag, FolderOpen, Link2, Calendar, Clock, Share2, Bookmark, Facebook, Twitter, Linkedin, Eye, User, Heart, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Tag, FolderOpen, Link2, Calendar, Clock } from 'lucide-react';
 import ScrollToTopButton from '@/components/blog/ScrollToTopButton';
+import SocialShareButtons from '@/components/blog/SocialShareButtons';
 import '@/styles/tiptap.css';
 
 // Related Post Card Component
@@ -125,138 +126,90 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Floating Navigation */}
-      <div className="fixed top-6 left-6 z-50">
-        <Link href="/blog">
-          <Button 
-            variant="outline" 
-            className="bg-white/90 backdrop-blur-sm border-gray-200 hover:bg-white hover:shadow-lg transition-all duration-300 rounded-full px-4 py-2"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-        </Link>
-      </div>
-
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        {post.coverImage ? (
-          <div className="relative h-[70vh] min-h-[500px] w-full">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10"></div>
-            <Image 
-              src={post.coverImage} 
-              alt={post.title}
-              fill
-              priority
-              className="object-cover"
-            />
-            <div className="absolute inset-0 z-20 flex items-end">
-              <div className="container mx-auto px-4 pb-16">
-                <div className="max-w-4xl mx-auto text-white">
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {post.categories && post.categories.slice(0, 2).map((category, index) => (
-                      <Badge key={`cat-${index}`} className="bg-white/20 text-white border-white/30 backdrop-blur-sm hover:bg-white/30 transition-colors">
-                        <FolderOpen className="h-3 w-3 mr-1" />
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
-                  
-                  <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
-                    {post.title}
-                  </h1>
-                  
-                  <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed max-w-3xl">
-                    {post.excerpt}
-                  </p>
-                  
-                  <div className="flex items-center text-white/80 gap-6">
-                    <div className="flex items-center">
-                      <Calendar className="h-5 w-5 mr-2" />
-                      <span className="font-medium">{formatDate(post.createdAt)}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-5 w-5 mr-2" />
-                      <span className="font-medium">{calculateReadingTime(post.content)} min read</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 py-24 px-4 overflow-hidden">
-            {/* Animated background elements */}
-            <div className="absolute inset-0">
-              <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full animate-pulse"></div>
-              <div className="absolute bottom-10 right-20 w-20 h-20 bg-white/10 rounded-full animate-pulse delay-1000"></div>
-              <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-white/10 rounded-full animate-pulse delay-500"></div>
-            </div>
-            
-            <div className="container mx-auto relative z-10">
-              <div className="max-w-4xl mx-auto text-white text-center">
-                <div className="flex flex-wrap gap-2 mb-6 justify-center">
-                  {post.categories && post.categories.slice(0, 2).map((category, index) => (
-                    <Badge key={`cat-${index}`} className="bg-white/20 text-white border-white/30 backdrop-blur-sm hover:bg-white/30 transition-colors">
-                      <FolderOpen className="h-3 w-3 mr-1" />
-                      {category}
-                    </Badge>
-                  ))}
-                </div>
-                
-                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
-                  {post.title}
-                </h1>
-                
-                <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed max-w-3xl mx-auto">
-                  {post.excerpt}
-                </p>
-                
-                <div className="flex items-center text-white/80 gap-6 justify-center">
-                  <div className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    <span className="font-medium">{formatDate(post.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2" />
-                    <span className="font-medium">{calculateReadingTime(post.content)} min read</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Navigation */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/blog">
+            <Button 
+              variant="outline" 
+              className="border-gray-200 hover:bg-gray-50 transition-all duration-300"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Blog
+            </Button>
+          </Link>
+          
+          <SocialShareButtons url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://tutorhub.com'}/blog/${post.slug}`} title={post.title} />
+        </div>
+      </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Article Content */}
-          <article className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12 border border-gray-100">
-            {/* Social Share Bar */}
-            <div className="flex items-center justify-between mb-8 p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Eye className="h-4 w-4" />
-                  <span className="text-sm font-medium">2.3k views</span>
+          {/* Post Header */}
+          <div className="mb-10">
+            {post.categories && post.categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {post.categories.map((category, index) => (
+                  <Badge key={`cat-${index}`} className="bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
+                    <FolderOpen className="h-3 w-3 mr-1" />
+                    {category}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
+            <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight text-gray-900">
+              {post.title}
+            </h1>
+            
+            <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+              {post.excerpt}
+            </p>
+            
+            <div className="flex items-center justify-between border-b border-gray-200 pb-6">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center text-gray-600">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  <span>{formatDate(post.createdAt)}</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Heart className="h-4 w-4" />
-                  <span className="text-sm font-medium">156 likes</span>
+                <div className="flex items-center text-gray-600">
+                  <Clock className="h-5 w-5 mr-2" />
+                  <span>{calculateReadingTime(post.content)} min read</span>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600 mr-2">Share:</span>
-                <Button variant="outline" size="sm" className="rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                  <Twitter className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" className="rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                  <Facebook className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" className="rounded-full p-2 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                  <Linkedin className="h-4 w-4" />
-                </Button>
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {post.tags.slice(0, 3).map((tag, index) => (
+                    <Badge key={`tag-${index}`} variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                      <Tag className="h-3 w-3 mr-1" />
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Featured Image */}
+          {post.coverImage && (
+            <div className="mb-10 rounded-xl overflow-hidden shadow-lg">
+              <div className="relative aspect-[16/9] w-full">
+                <Image 
+                  src={post.coverImage} 
+                  alt={post.title}
+                  fill
+                  priority
+                  className="object-cover"
+                />
               </div>
+            </div>
+          )}
+          {/* Article Content */}
+          <article className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12 border border-gray-100">
+            {/* Social Share Bar */}
+            <div className="flex items-center justify-end mb-8 p-4 bg-gray-50 rounded-xl">
+              <SocialShareButtons url={`${process.env.NEXT_PUBLIC_APP_URL || 'https://tutorhub.com'}/blog/${post.slug}`} title={post.title} />
             </div>
             
             {/* Article Content */}
