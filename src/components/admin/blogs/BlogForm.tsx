@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,8 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from 'next/navigation';
 import { BlogPost } from "@/types/blog";
-import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
+import Tiptap from "@/components/editor/Tiptap";
 
 // Define form schema
 const formSchema = z.object({
@@ -56,6 +55,7 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
+      console.log("Submitting blog post:", values);
       await onSubmit(values);
       router.push("/admin/dashboard/blogs");
     } catch (error) {
@@ -113,27 +113,16 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
         <FormField
           control={form.control}
           name="content"
-          render={({ field }) => {
-            const editor = useEditor({
-              extensions: [
-                StarterKit,
-              ],
-              content: field.value,
-              onUpdate: ({ editor }) => {
-                field.onChange(editor.getHTML());
-              },
-            });
-
-            return (
-              <FormItem>
-                <FormLabel>Content</FormLabel>
-                <FormControl>
-                  <EditorContent editor={editor} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            );
-          }}
+          render={({ field }) => (
+            <FormItem className="space-y-2">
+              <FormLabel>Content</FormLabel>
+              <Tiptap 
+                content={field.value} 
+                onChange={field.onChange}
+              />
+              <FormMessage />
+            </FormItem>
+          )}
         />
 
         <FormField
