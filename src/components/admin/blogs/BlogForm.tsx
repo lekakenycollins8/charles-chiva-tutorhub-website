@@ -5,6 +5,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
+import { CheckIcon } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +19,6 @@ import { X, Plus, Tag, Hash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getBlogPosts } from "@/lib/actions/blog-actions";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 // Define form schema
@@ -431,7 +431,13 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
                                   <p className="font-medium">{post.title}</p>
                                   <p className="text-xs text-muted-foreground truncate max-w-[300px]">{post.excerpt}</p>
                                 </div>
-                                <Checkbox checked={isSelected} />
+                                {isSelected ? (
+                                  <div className="h-4 w-4 rounded-[4px] bg-primary flex items-center justify-center">
+                                    <CheckIcon className="h-3.5 w-3.5 text-primary-foreground" />
+                                  </div>
+                                ) : (
+                                  <div className="h-4 w-4 rounded-[4px] border border-input" />
+                                )}
                               </CardContent>
                             </Card>
                           );
