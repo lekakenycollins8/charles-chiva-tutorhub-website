@@ -4,10 +4,14 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { BlogPost } from "@/types/blog";
 import { getSession } from "@/lib/auth";
+import { normalizeSlug } from "@/lib/utils/slug-utils";
 
 export async function createBlogPost(blogPost: BlogPost) {
   try {
-    console.log('Creating blog post with data:', blogPost);
+    // Normalize the slug to ensure consistent format
+    const normalizedSlug = normalizeSlug(blogPost.slug);
+    console.log('Creating blog post with normalized slug:', normalizedSlug);
+    console.log('Original blog post data:', blogPost);
     
     // Get the current user session
     const session = await getSession();
@@ -19,7 +23,7 @@ export async function createBlogPost(blogPost: BlogPost) {
     await prisma.blogPost.create({
       data: {
         title: blogPost.title,
-        slug: blogPost.slug,
+        slug: normalizedSlug, // Use normalized slug
         excerpt: blogPost.excerpt,
         content: blogPost.content,
         coverImage: blogPost.coverImage,
@@ -72,12 +76,18 @@ export async function getBlogPostById(id: string) {
 
 export async function updateBlogPost(id: string, updateData: Partial<BlogPost>) {
   try {
+    // If slug is being updated, normalize it
+    let dataToUpdate = {...updateData};
+    
+    if (updateData.slug) {
+      const normalizedSlug = normalizeSlug(updateData.slug);
+      console.log('Updating blog post with normalized slug:', normalizedSlug);
+      dataToUpdate.slug = normalizedSlug;
+    }
+    
     const updatedPost = await prisma.blogPost.update({
       where: { id },
-      data: {
-        ...updateData,
-        authorId: updateData.authorId
-      }
+      data: dataToUpdate
     });
     revalidatePath("/admin/dashboard/blogs");
     revalidatePath(`/blog/${updatedPost.slug}`);
@@ -103,30 +113,64 @@ export async function getBlogPostBySlug(slug: string) {
   try {
     // Normalize the slug to ensure consistent format (replace spaces with dashes)
     const normalizedSlug = slug.replace(/ /g, '-');
+    console.log('Looking for blog post with normalized slug:', normalizedSlug);
     
+    // First try: exact match with normalized slug
     const post = await prisma.blogPost.findUnique({
       where: { slug: normalizedSlug }
     });
     
-    if (!post) {
-      // Try a more flexible search if exact match fails
-      const similarPosts = await prisma.blogPost.findMany({
-        where: {
-          slug: {
-            contains: normalizedSlug.replace(/-/g, '').toLowerCase()
-          }
-        },
-        take: 1
-      });
-      
-      if (similarPosts.length > 0) {
-        return { success: true, data: similarPosts[0] };
-      }
-      
-      return { success: false, error: "Blog post not found" };
+    if (post) {
+      console.log('Found blog post with exact slug match:', post.title);
+      return { success: true, data: post };
     }
     
-    return { success: true, data: post };
+    console.log('No exact match found, trying case-insensitive search');
+    
+    // Second try: case-insensitive search
+    const caseInsensitivePosts = await prisma.blogPost.findMany({
+      where: {
+        slug: {
+          mode: 'insensitive',
+          equals: normalizedSlug
+        }
+      },
+      take: 1
+    });
+    
+    if (caseInsensitivePosts.length > 0) {
+      console.log('Found blog post with case-insensitive match:', caseInsensitivePosts[0].title);
+      return { success: true, data: caseInsensitivePosts[0] };
+    }
+    
+    console.log('No case-insensitive match found, trying contains search');
+    
+    // Third try: contains search without dashes
+    const cleanSlug = normalizedSlug.replace(/-/g, '').toLowerCase();
+    console.log('Searching with cleaned slug:', cleanSlug);
+    
+    const similarPosts = await prisma.blogPost.findMany({
+      where: {
+        slug: {
+          contains: cleanSlug,
+          mode: 'insensitive'
+        }
+      },
+      take: 1
+    });
+    
+    if (similarPosts.length > 0) {
+      console.log('Found blog post with contains search:', similarPosts[0].title);
+      return { success: true, data: similarPosts[0] };
+    }
+    
+    // Last attempt: get all posts and log them for debugging
+    const allPosts = await prisma.blogPost.findMany({
+      select: { id: true, title: true, slug: true }
+    });
+    
+    console.log('No blog post found. Available posts:', JSON.stringify(allPosts));
+    return { success: false, error: "Blog post not found" };
   } catch (error) {
     console.error("Error fetching blog post by slug:", error);
     return { success: false, error: "Failed to fetch blog post" };

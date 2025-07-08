@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { BlogPost } from "@/types/blog";
 import Tiptap from "@/components/editor/Tiptap";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { normalizeSlug } from "@/lib/utils/slug-utils";
 
 // Define form schema
 const formSchema = z.object({
@@ -21,23 +22,27 @@ const formSchema = z.object({
   excerpt: z.string().min(1, { message: "Excerpt is required" }),
   content: z.string().min(1, { message: "Content is required" }),
   coverImage: z.string().optional().nullable(),
-  isPublished: z.boolean().default(false),
-  isDraft: z.boolean().default(true),
-  categories: z.array(z.string()).default([]),
-  tags: z.array(z.string()).optional().default([]),
-  relatedPosts: z.array(z.string()).optional().default([]),
+  isPublished: z.boolean(),
+  isDraft: z.boolean(),
+  categories: z.array(z.string()),
+  tags: z.array(z.string()),
+  relatedPosts: z.array(z.string()),
 });
+
+// Define the form values type explicitly
+type FormValues = z.infer<typeof formSchema>;
 
 type BlogFormProps = {
   initialData?: BlogPost;
-  onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>;
+  onSubmit: (values: FormValues) => Promise<void>;
 };
 
 export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [autoSlug, setAutoSlug] = useState(!initialData?.slug);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       title: "",
@@ -53,18 +58,37 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
     },
   });
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  // Watch the title field to auto-generate slug
+  const title = useWatch({
+    control: form.control,
+    name: "title",
+    defaultValue: initialData?.title || ""
+  });
+
+  // Auto-generate slug when title changes if autoSlug is enabled
+  useEffect(() => {
+    if (autoSlug && title) {
+      form.setValue("slug", normalizeSlug(title));
+    }
+  }, [title, autoSlug, form]);
+
+  const handleSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
-      console.log("Submitting blog post:", values);
+      
+      // Normalize the slug regardless of how it was entered
+      const normalizedSlug = normalizeSlug(values.slug);
       
       // Make sure categories, tags, and relatedPosts are arrays
       const formattedValues = {
         ...values,
+        slug: normalizedSlug,
         categories: Array.isArray(values.categories) ? values.categories : [],
         tags: Array.isArray(values.tags) ? values.tags : [],
         relatedPosts: Array.isArray(values.relatedPosts) ? values.relatedPosts : [],
       };
+      
+      console.log("Submitting blog post with normalized slug:", formattedValues);
       
       await onSubmit(formattedValues);
       router.push("/admin/dashboard/blogs");
@@ -78,11 +102,11 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-8">
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="title"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
@@ -94,23 +118,51 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
         />
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="slug"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
-              <FormLabel>Slug</FormLabel>
+              <div className="flex justify-between items-center">
+                <FormLabel>Slug</FormLabel>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setAutoSlug(!autoSlug);
+                    if (!autoSlug && title) {
+                      form.setValue("slug", normalizeSlug(title));
+                    }
+                  }}
+                  className="h-8 text-xs"
+                >
+                  {autoSlug ? "Manual" : "Auto-generate"}
+                </Button>
+              </div>
               <FormControl>
-                <Input placeholder="blog-slug" {...field} />
+                <Input 
+                  placeholder="blog-slug" 
+                  {...field} 
+                  onChange={(e) => {
+                    // Always normalize slug on input
+                    const value = e.target.value;
+                    field.onChange(value.replace(/ /g, '-'));
+                  }}
+                  disabled={autoSlug}
+                />
               </FormControl>
               <FormMessage />
+              <p className="text-xs text-muted-foreground mt-1">
+                URL-friendly version of the title (auto-generated or custom)
+              </p>
             </FormItem>
           )}
         />
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="excerpt"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
               <FormLabel>Excerpt</FormLabel>
               <FormControl>
@@ -122,9 +174,9 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
         />
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="content"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem className="space-y-2">
               <FormLabel>Content</FormLabel>
               <Tiptap 
@@ -137,9 +189,9 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
         />
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="coverImage"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
               <FormLabel>Cover Image</FormLabel>
               <ImageUpload
@@ -153,9 +205,9 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
         />
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="isPublished"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
               <FormControl>
                 <Checkbox
