@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from 'next/navigation';
 import { BlogPost } from "@/types/blog";
 import Tiptap from "@/components/editor/Tiptap";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 // Define form schema
 const formSchema = z.object({
@@ -130,10 +131,12 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
           name="coverImage"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cover Image URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/image.jpg" {...field} />
-              </FormControl>
+              <FormLabel>Cover Image</FormLabel>
+              <ImageUpload
+                value={field.value || ""}
+                onChange={field.onChange}
+                disabled={loading}
+              />
               <FormMessage />
             </FormItem>
           )}

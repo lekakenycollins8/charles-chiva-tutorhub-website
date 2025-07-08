@@ -2,7 +2,8 @@
 
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useEffect } from 'react';
+import Image from '@tiptap/extension-image';
+import { useEffect, useRef } from 'react';
 import '@/styles/tiptap.css';
 
 interface TiptapProps {
@@ -12,14 +13,58 @@ interface TiptapProps {
 }
 
 const Tiptap = ({ content, onChange, editable = true }: TiptapProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      Image.configure({
+        allowBase64: true,
+        inline: false,
+      }),
+    ],
     content: content,
     editable: editable,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
   });
+  
+  const handleImageUpload = async (file: File) => {
+    if (!editor) return;
+    
+    try {
+      // Create form data for upload
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Upload the file
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const data = await response.json();
+      
+      // Insert the image at the current cursor position
+      editor.chain().focus().setImage({ src: data.url }).run();
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+  };
+  
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+      // Reset the input value so the same file can be selected again
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
@@ -129,8 +174,28 @@ const Tiptap = ({ content, onChange, editable = true }: TiptapProps) => {
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Insert Image"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          </button>
         </div>
       )}
+      
+      {/* Hidden file input for image uploads */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileInputChange}
+        accept="image/*"
+        className="hidden"
+      />
       
       {/* Editor content */}
       <EditorContent editor={editor} className="ProseMirror-wrapper" />
