@@ -207,7 +207,7 @@ export default function BlogsPage() {
                     <Eye className="h-3.5 w-3.5" /> View
                   </Button>
                 </Link>
-                <Link href={`/admin/dashboard/blogs/edit/${post.id}`}>
+                <Link href={`/admin/dashboard/blogs/${post.id}`}>
                   <Button size="sm" variant="outline" className="gap-1">
                     <Edit className="h-3.5 w-3.5" /> Edit
                   </Button>
