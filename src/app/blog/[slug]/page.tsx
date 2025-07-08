@@ -79,9 +79,9 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           </div>
         )}
         
-        <div className="prose prose-lg max-w-none">
+        <div className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:my-4 prose-p:text-gray-700 prose-a:text-blue-600 prose-a:underline prose-img:rounded-lg">
           <div 
-            className="ProseMirror-wrapper" 
+            className="ProseMirror" 
             dangerouslySetInnerHTML={{ __html: post.content }} 
           />
         </div>
