@@ -24,30 +24,10 @@ export default function AdminHeader() {
               <Menu className="h-5 w-5" />
               <span className="sr-only">Open sidebar</span>
             </Button>
-            
-            {/* Search */}
-            <div className="hidden md:block">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2 border-gray-300 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm rounded-md"
-                />
-              </div>
-            </div>
           </div>
           
           {/* Right side - Notifications and profile */}
-          <div className="flex items-center">
-            {/* Notifications */}
-            <Button variant="ghost" size="icon" className="ml-4">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">View notifications</span>
-            </Button>
-            
+          <div className="flex items-center">           
             {/* Profile */}
             <div className="ml-4 flex items-center">
               <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
@@ -84,7 +64,7 @@ export default function AdminHeader() {
                 </div>
                 <nav className="mt-5 px-2 space-y-1">
                   {/* Mobile navigation items */}
-                  {["Dashboard", "Resources", "Blog", "Messages", "Videos", "Settings"].map((item) => (
+                  {["Dashboard", "Resources", "Blog", "Messages", "Videos"].map((item) => (
                     <a
                       key={item}
                       href={`/admin/dashboard${item === "Dashboard" ? "" : `/${item.toLowerCase()}`}`}
