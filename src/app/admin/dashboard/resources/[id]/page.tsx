@@ -7,8 +7,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DeleteResourceButton from "@/components/admin/resources/DeleteResourceButton";
 
-export default async function ResourcePage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function ResourcePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { success, resource, message } = await getResource(id);
   
   if (!success || !resource) {
@@ -17,7 +17,7 @@ export default async function ResourcePage({ params }: { params: { id: string } 
   
   // Format the file size
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
+    if (bytes === 0) return "0 Bytes";  
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));

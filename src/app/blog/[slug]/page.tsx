@@ -54,9 +54,9 @@ async function RelatedPostCard({ postId }: { postId: string }) {
   );
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   // Get the slug from params
-  const { slug } = params;
+  const { slug } = await params;
   
   // Normalize the slug: decode URL-encoded characters and ensure dashes instead of spaces
   const normalizedSlug = decodeURIComponent(slug).replace(/ /g, '-');

@@ -12,9 +12,13 @@ import { ArrowLeft, Mail, Trash, CheckCircle, Clock, AlertCircle } from "lucide-
 import { format } from "date-fns";
 import { ContactSubmission } from "@/types/contact";
 
-export default function ContactSubmissionDetailPage({ params }: { params: { id: string } }) {
+type ContactDetailPageProps = {
+  params: Promise<{ id: string }>
+}
+
+export default async function ContactSubmissionDetailPage({ params }: ContactDetailPageProps) {
   const router = useRouter();
-  const { id } = params;
+  const { id } = await params;
   const [submission, setSubmission] = useState<ContactSubmission | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

@@ -51,7 +51,7 @@ export default function ContactPage() {
       const result = await createContactSubmission({
         name: data.name,
         email: data.email,
-        phone: data.phone,
+        phone: data.phone || null,
         subject: data.subject,
         message: data.message,
         source: 'contact_page'

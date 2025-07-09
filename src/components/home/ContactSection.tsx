@@ -41,6 +41,7 @@ export default function ContactSection() {
       const result = await createContactSubmission({
         name: data.name,
         email: data.email,
+        phone: null, // Adding required phone field as null for homepage form
         subject: 'Homepage Inquiry', // Default subject for homepage form
         message: data.message,
         source: 'homepage'

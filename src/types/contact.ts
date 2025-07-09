@@ -2,10 +2,10 @@ export interface ContactSubmission {
   id?: string;
   name: string;
   email: string;
-  phone?: string;
+  phone: string | null;
   subject: string;
   message: string;
-  source?: string; // "homepage" or "contact_page"
+  source: string | null; // "homepage" or "contact_page"
   status?: string; // "NEW", "IN_PROGRESS", "RESOLVED"
   createdAt?: Date;
   updatedAt?: Date;
