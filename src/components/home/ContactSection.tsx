@@ -58,10 +58,8 @@ export default function ContactSection() {
         message: data.message
       });
       
-      // Reset form if everything is successful
-      if (formState.succeeded) {
-        form.reset();
-      }
+      // Reset form immediately after submission
+      form.reset();
     } catch (error) {
       console.error('Contact form error:', error);
       setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');

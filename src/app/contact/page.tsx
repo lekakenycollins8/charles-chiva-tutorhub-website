@@ -65,15 +65,13 @@ export default function ContactPage() {
       await formspreeSubmit({
         name: data.name,
         email: data.email,
-        phone: data.phone,
+        phone: data.phone || 'Not provided',
         subject: data.subject,
         message: data.message
       });
       
-      // Reset form if everything is successful
-      if (formState.succeeded) {
-        form.reset();
-      }
+      // Reset form immediately after submission
+      form.reset();
     } catch (error) {
       console.error('Contact form error:', error);
       setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');

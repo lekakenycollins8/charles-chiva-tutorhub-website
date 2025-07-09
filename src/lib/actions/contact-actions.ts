@@ -77,32 +77,6 @@ export async function updateContactSubmissionStatus(id: string, status: string) 
   }
 }
 
-// This function is no longer needed as we're not storing responses in the database
-// Admin will contact clients directly via email
-export async function updateSubmissionStatus(submissionId: string, status: string) {
-  try {
-    // Get the current user session
-    const session = await getSession();
-    if (!session?.user?.id) {
-      throw new Error("User not authenticated");
-    }
-    
-    // Update the submission status
-    await prisma.contactSubmission.update({
-      where: { id: submissionId },
-      data: { status }
-    });
-    
-    revalidatePath("/admin/dashboard/contacts");
-    revalidatePath(`/admin/dashboard/contacts/${submissionId}`);
-    
-    return { success: true };
-  } catch (error) {
-    console.error("Error updating submission status:", error);
-    return { success: false, error: "Failed to update status" };
-  }
-}
-
 export async function deleteContactSubmission(id: string) {
   try {
     // Delete the submission
