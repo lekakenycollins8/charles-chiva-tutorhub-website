@@ -9,6 +9,18 @@ import tutoringAnimation from '../../../public/animations/tutoring-animation.jso
 
 const Hero = () => {
   const [isVisible, setIsVisible] = useState(false);
+  
+  // Function to handle smooth scrolling to contact section
+  const scrollToContact = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
 
   useEffect(() => {
     setIsVisible(true);
@@ -57,7 +69,21 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-wrap gap-4 pt-3">
-              <Button size="default" className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30 transition-all hover:scale-105">
+              <Button 
+                size="default" 
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30 transition-all hover:scale-105 group relative overflow-hidden"
+                onClick={scrollToContact}
+              >
+                <span className="relative z-10 flex items-center">
+                  Contact Us Now
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+                <span className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+              </Button>
+              
+              <Button size="default" className="bg-white text-blue-600 hover:bg-blue-50 rounded-full px-6 shadow-lg transition-all hover:scale-105">
                 <Link href="/contact">Start Your Journey</Link>
               </Button>
               
@@ -138,7 +164,19 @@ const Hero = () => {
       </div>
       
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
+      <div 
+        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 animate-bounce cursor-pointer"
+        onClick={(e) => {
+          e.preventDefault();
+          const contactSection = document.getElementById('contact');
+          if (contactSection) {
+            contactSection.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }}
+      >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>

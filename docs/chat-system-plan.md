@@ -31,33 +31,22 @@ The contact form will include the following components:
 2. **Message Section**
    - Text area for detailed message
    - Character count/limit indicator
-   - Optional file attachment capability
 
 3. **Submission Elements**
    - Submit button with loading state
-   - CAPTCHA or other anti-spam measure
-   - Privacy policy acknowledgment checkbox
 
 4. **Confirmation Display**
    - Success message after submission
    - Error handling with user-friendly messages
-   - Reference number for follow-up
 
 ### Additional Contact Information
 
 1. **Business Details**
    - Email address for direct contact
-   - Phone number (if applicable)
-   - Physical address (if applicable)
-   - Business hours
 
 2. **Social Media Links**
    - Links to relevant social media profiles
    - Professional network connections (LinkedIn)
-
-3. **Alternative Contact Methods**
-   - Links to scheduling tools (if applicable)
-   - FAQ section for common questions
 
 ### Form Validation
 
@@ -81,39 +70,14 @@ The admin dashboard for managing contact form submissions will include:
 
 1. **Submission Management**
    - List of all contact form submissions
-   - Status indicators (new, in-progress, resolved)
-   - Search and filter capabilities
    - Sorting by date, subject, status
 
 2. **Submission Details View**
    - Complete submission information display
    - Contact details of the submitter
    - Message content with formatting preserved
-   - File attachments (if applicable)
 
-3. **Response System**
-   - Email response interface
-   - Response templates for common inquiries
-   - Response history tracking
-   - Status update functionality
 
-### Admin Features
-
-1. **Notification System**
-   - Email notifications for new submissions
-   - Browser notifications in admin dashboard
-   - Notification preferences configuration
-
-2. **User Management**
-   - Admin user accounts with different permission levels
-   - Activity logging for accountability
-   - Secure authentication
-
-3. **Analytics and Reporting**
-   - Submission volume tracking
-   - Response time metrics
-   - Common inquiry categories
-   - Exportable reports (CSV, PDF)
 
 ## Implementation Code Examples
 
@@ -359,8 +323,6 @@ export async function POST(request) {
 1. **Functionality Testing**
    - Contact form validation works correctly
    - Form submissions are stored in the database
-   - Email notifications are sent to admin
-   - Confirmation emails are sent to users
    - Form handles errors gracefully
 
 2. **UI/UX Testing**
@@ -427,9 +389,8 @@ model ContactResponse {
 
 This schema defines two main models:
 
-1. **ContactSubmission**: Stores all contact form submissions with fields for the submitter's information, message content, and status tracking.
+1. **ContactSubmission**: Stores all contact form submissions with fields for the submitter's information, message content etc
 
-2. **ContactResponse**: Tracks admin responses to each submission, maintaining a history of all communication.
 
 ## Security Considerations
 
@@ -439,30 +400,11 @@ This schema defines two main models:
    - Sanitize message content to prevent XSS attacks
    - Use prepared statements for database queries via Prisma
 
-2. **Rate Limiting and Spam Prevention**
-   - Implement rate limiting on the contact form API endpoint
-   - Add CAPTCHA or honeypot fields to prevent bot submissions
-   - Monitor for suspicious activity patterns
-   - Implement IP-based blocking for repeated abuse
-
-3. **Authentication and Authorization**
-   - Secure admin dashboard with proper authentication
-   - Implement role-based access for contact submission management
-   - Use secure sessions with appropriate timeout settings
-   - Require re-authentication for sensitive operations
-
 4. **Data Protection and Privacy**
    - Store only necessary personal information
    - Implement proper data retention and deletion policies
    - Encrypt sensitive data in transit (HTTPS) and at rest
    - Comply with privacy regulations (GDPR, CCPA)
-   - Include clear privacy policy references in the form
-
-5. **Email Security**
-   - Verify email sending domain with SPF, DKIM, and DMARC
-   - Use secure email service providers (Resend, SendGrid, etc.)
-   - Implement email templates with proper sanitization
-   - Monitor email delivery and bounce rates
 
 ## Testing Plan
 
@@ -483,22 +425,3 @@ This schema defines two main models:
    - Verify form accessibility compliance
    - Test on multiple browsers and devices
    - Gather feedback on form usability and clarity
-
-## Deployment Considerations
-
-1. **Server Requirements**
-   - Node.js environment for Next.js
-   - PostgreSQL database with Prisma ORM
-   - Email service provider account (Resend, SendGrid, etc.)
-
-2. **Environment Variables**
-   - Database connection string
-   - Email service API keys
-   - Admin notification email address
-   - Website URL for email links
-
-3. **Monitoring and Maintenance**
-   - Set up error logging for form submissions
-   - Monitor email delivery rates
-   - Track form submission analytics
-   - Regular database backups for contact submissions

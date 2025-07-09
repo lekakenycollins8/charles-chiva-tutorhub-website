@@ -48,10 +48,9 @@
 
 **Days 4-5: Contact Section**
 - Implement a comprehensive contact form with validation
-- Set up email notification system for form submissions using Resend
+- Set up email notification system for form submissions using Formspree
 - Create admin interface to view and manage contact submissions
 - Add contact information display (email, phone, address, business hours)
-- Implement spam prevention measures (CAPTCHA, rate limiting)
 
 **Weekend: Integration and Testing**
 - Integrate blog and contact form systems with main website
@@ -62,8 +61,8 @@
 
 ### Week 4: Payment Integration and Final Polishing
 **Days 1-3: Payment System**
-- Set up Stripe integration
-- Implement checkout flow for paid resources
+- Set up Paystack integration
+- Implement checkout flow for paid resources using paystack
 - Create payment confirmation and receipt system
 - Test payment processing end-to-end
 
