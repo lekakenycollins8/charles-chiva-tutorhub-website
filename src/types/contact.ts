@@ -11,17 +11,9 @@ export interface ContactSubmission {
   updatedAt?: Date;
 }
 
-export interface ContactResponse {
-  id?: string;
-  submissionId: string;
-  message: string;
-  sentAt?: Date;
-  sentById: string;
-  sentByName: string;
-}
-
 export interface ContactSubmissionResponse {
   success: boolean;
   data?: ContactSubmission | ContactSubmission[] | null;
   error?: string | null;
+  formspreeSubmitted?: boolean;
 }

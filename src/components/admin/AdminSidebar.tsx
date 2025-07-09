@@ -9,7 +9,8 @@ import {
   MessageSquare, 
   Video, 
   Settings, 
-  LogOut 
+  LogOut,
+  Mail 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAdmin } from "@/lib/actions/auth-actions";
@@ -41,19 +42,14 @@ export default function AdminSidebar() {
       icon: <BookOpen className="h-5 w-5" />,
     },
     {
-      name: "Messages",
-      href: "/admin/dashboard/messages",
-      icon: <MessageSquare className="h-5 w-5" />,
+      name: "Contacts",
+      href: "/admin/dashboard/contacts",
+      icon: <Mail className="h-5 w-5" />,
     },
     {
       name: "Videos",
       href: "/admin/dashboard/videos",
       icon: <Video className="h-5 w-5" />,
-    },
-    {
-      name: "Settings",
-      href: "/admin/dashboard/settings",
-      icon: <Settings className="h-5 w-5" />,
     },
   ];
 
