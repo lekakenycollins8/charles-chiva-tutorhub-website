@@ -42,6 +42,20 @@ model Resource {
   downloads     Int       @default(0)
 }
 
+// Video model for tutorial videos
+model Video {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  videoUrl      String
+  videoType     String
+  videoSize     Int
+  thumbnailUrl  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  views         Int       @default(0)
+}
+
 // Contact form submission model
 model ContactSubmission {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
