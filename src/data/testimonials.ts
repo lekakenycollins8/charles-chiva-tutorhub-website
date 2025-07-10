@@ -1,7 +1,7 @@
 export interface Testimonial {
   id: string;
   name: string;
-  role: string;
+  location: string;
   content: string;
   avatarUrl?: string;
 }
@@ -9,30 +9,30 @@ export interface Testimonial {
 export const testimonials: Testimonial[] = [
   {
     id: '1',
-    name: 'Sarah Johnson',
-    role: 'Chemistry Student',
-    content: 'The chemistry tutoring at Chiva TutorHub completely transformed my understanding of organic chemistry. My grades improved from a C to an A within just one semester!',
-    avatarUrl: '/avatars/student1.jpg'
+    name: 'Maria K.',
+    location: 'Nigeria',
+    content: 'ChivaTutorHub helped me pass my IELTS on the first attempt! The lessons were simple, well-structured, and focused exactly on the areas I struggled with. Thanks to their guidance, I got my desired band score and can now pursue my studies abroad.',
+    avatarUrl: '/images/maria.jpg'
   },
   {
     id: '2',
-    name: 'Michael Chen',
-    role: 'Mathematics Student',
-    content: 'I was struggling with calculus until I found Chiva TutorHub. The personalized approach and clear explanations made all the difference in my understanding.',
-    avatarUrl: '/avatars/student2.jpg'
+    name: 'Ahmed S.',
+    location: 'Kenya',
+    content: 'Before joining ChivaTutorHub, I was struggling to keep up with my assignments. The tutors are so patient and professional, they explained concepts in a way I could easily understand. Now, my grades have improved, and I feel confident in class!',
+    avatarUrl: '/images/ahmed.jpg'
   },
   {
     id: '3',
-    name: 'Emily Rodriguez',
-    role: 'Business Studies Student',
-    content: 'The business studies tutoring helped me not only with my coursework but also with practical applications. I now feel confident applying business concepts in real-world scenarios.',
-    avatarUrl: '/avatars/student3.jpg'
+    name: 'Priya D.',
+    location: 'India',
+    content: 'Moving to a new country for studies can be stressful, but ChivaTutorHub made the transition so much easier. They not only helped me academically but also guided me on how to adjust to the education system abroad. Their support is unmatched!',
+    avatarUrl: '/images/priya.jpg'
   },
   {
     id: '4',
-    name: 'David Thompson',
-    role: 'Accounting Student',
-    content: "As someone who struggled with accounting principles, I can confidently say that Chiva TutorHub's approach made complex concepts accessible and easy to understand.",
-    avatarUrl: '/avatars/student4.jpg'
+    name: 'James O.',
+    location: 'Manchester, UK',
+    content: 'Chiva Tutor Hub was a game-changer for me! As a university student in Manchester, I was struggling to keep up with Chemistry and Mathematics, especially with the fast-paced lectures. Their one-on-one tutoring simplified the tough concepts and helped me build confidence. I passed my exams with flying colors — I highly recommend them to any student looking to improve their grades.',
+    avatarUrl: '/images/james.jpg'
   }
 ];
