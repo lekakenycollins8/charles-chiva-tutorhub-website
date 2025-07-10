@@ -10,9 +10,7 @@ import { Video } from "@/types/video";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface EditVideoPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 export default function EditVideoPage({ params }: EditVideoPageProps) {
@@ -24,7 +22,7 @@ export default function EditVideoPage({ params }: EditVideoPageProps) {
     const fetchVideo = async () => {
       try {
         setLoading(true);
-        const { success, data, error } = await getVideo(params.id);
+        const { success, data, error } = await getVideo((await params).id);
         
         if (success && data) {
           setVideo(data as Video);
@@ -40,7 +38,7 @@ export default function EditVideoPage({ params }: EditVideoPageProps) {
     };
 
     fetchVideo();
-  }, [params.id]);
+  }, [params]);
 
   return (
     <div className="space-y-6">
