@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { use } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
@@ -25,12 +26,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface VideoPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 export default function VideoPage({ params }: VideoPageProps) {
+  // Unwrap params Promise using React.use
+  const { id } = use(params);
   const router = useRouter();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,7 @@ export default function VideoPage({ params }: VideoPageProps) {
     const fetchVideo = async () => {
       try {
         setLoading(true);
-        const { success, data, error } = await getVideo(params.id);
+        const { success, data, error } = await getVideo(id);
         
         if (success && data) {
           setVideo(data as Video);
@@ -57,12 +58,12 @@ export default function VideoPage({ params }: VideoPageProps) {
     };
 
     fetchVideo();
-  }, [params.id]);
+  }, [id]);
 
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      const { success, error } = await deleteVideo(params.id);
+      const { success, error } = await deleteVideo(id);
       
       if (success) {
         toast('Video deleted successfully');
@@ -96,7 +97,7 @@ export default function VideoPage({ params }: VideoPageProps) {
 
       {/* Actions */}
       <div className="flex justify-end gap-2">
-        <Link href={`/admin/dashboard/videos/${params.id}/edit`}>
+        <Link href={`/admin/dashboard/videos/${id}/edit`}>
           <Button variant="outline" className="flex items-center gap-2">
             <Pencil className="h-4 w-4" />
             <span>Edit</span>
