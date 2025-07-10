@@ -2,7 +2,6 @@
 
 import { Download } from "lucide-react";
 import { useState, useEffect } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 import { useSearchParams, useRouter } from "next/navigation";
 
 interface DownloadButtonProps {
@@ -11,6 +10,7 @@ interface DownloadButtonProps {
   resourceId: string;
   isPaid: boolean;
   price?: number | null;
+  userEmail?: string;
 }
 
 export default function DownloadButton({ 
@@ -18,7 +18,8 @@ export default function DownloadButton({
   className,
   resourceId,
   isPaid,
-  price
+  price,
+  userEmail
 }: DownloadButtonProps) {
   const [loading, setLoading] = useState(false);
   const [hasValidToken, setHasValidToken] = useState(false);
@@ -47,23 +48,33 @@ export default function DownloadButton({
 
   const handleDownload = async () => {
     if (isPaid && !hasValidToken) {
-      // Initiate Stripe checkout for paid resources
+      // Initiate Paystack checkout for paid resources
       setLoading(true);
       try {
-        const response = await fetch('/api/stripe/checkout', {
+        // Check if user email is available
+        const email = userEmail || prompt('Please enter your email address to continue with payment:');
+        
+        if (!email) {
+          setLoading(false);
+          return;
+        }
+        
+        const response = await fetch('/api/paystack/initialize', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             resourceId,
-            price
+            price,
+            email
           }),
         });
         
-        const { sessionId } = await response.json();
-        const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-        await stripe?.redirectToCheckout({ sessionId });
+        const { authorization_url } = await response.json();
+        
+        // Redirect to Paystack payment page
+        window.location.href = authorization_url;
       } catch (error) {
         console.error('Checkout error:', error);
         setLoading(false);

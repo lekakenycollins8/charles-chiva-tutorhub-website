@@ -75,7 +75,7 @@ const FeaturedResources = async () => {
                     resource.isPaid ? 'bg-blue-600' : 'bg-green-500'
                   } text-white font-bold px-4 py-2 m-3 rounded-full shadow-md transform -rotate-2`}
                 >
-                  {resource.isPaid ? `£${resource.price}` : 'Free Access'}
+                  {resource.isPaid ? `$${resource.price}` : 'Free Access'}
                 </div>
               </div>
 

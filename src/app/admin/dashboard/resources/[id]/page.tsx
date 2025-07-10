@@ -77,7 +77,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                 <h3 className="text-sm font-medium text-gray-500">Pricing</h3>
                 <p className="mt-1">
                   {resource.isPaid ? (
-                    <span className="font-semibold text-blue-600">£{resource.price}</span>
+                    <span className="font-semibold text-blue-600">${resource.price}</span>
                   ) : (
                     <span className="text-green-600 font-semibold">Free</span>
                   )}
