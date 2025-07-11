@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import crypto from "crypto";
 import { incrementDownloadCount } from "@/lib/actions/resource-actions";
+import { prisma } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -35,10 +36,40 @@ export async function POST(request: Request) {
     if (event.event === "charge.success") {
       const data = event.data;
       const metadata = data.metadata;
+      const reference = data.reference;
       
-      // Increment download count for the purchased resource
-      if (metadata && metadata.resourceId) {
+      // Check if this is a resource payment or a pricing plan payment
+      if (reference.startsWith('resource_') && metadata && metadata.resourceId) {
+        // Resource payment - increment download count
         await incrementDownloadCount(metadata.resourceId);
+      } 
+      else if (reference.startsWith('plan_') && metadata && metadata.planId) {
+        // Pricing plan payment - record the purchase
+        try {
+          // @ts-ignore
+          await prisma.Payment.create({
+            data: {
+              reference: reference,
+              email: data.customer.email,
+              amount: metadata.totalAmount,
+              status: 'completed',
+              metadata: {
+                planId: metadata.planId,
+                planName: metadata.planName,
+                quantity: metadata.quantity,
+                priceUnit: metadata.priceUnit,
+                unitPrice: metadata.unitPrice
+              }
+            }
+          });
+          
+          // Here you would implement any additional business logic
+          // such as creating a subscription, updating user access, etc.
+          console.log(`Plan payment recorded: ${reference} for plan ${metadata.planName}`);
+        } catch (error) {
+          console.error('Error recording plan payment:', error);
+          // Still return success to Paystack but log the error
+        }
       }
     }
 

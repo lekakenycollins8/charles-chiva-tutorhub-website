@@ -89,3 +89,16 @@ model BlogPost {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
+
+// Payment model for tracking both resource and pricing plan payments
+model Payment {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  reference     String    @unique  // Paystack reference
+  email         String    // Customer email
+  amount        Float     // Amount paid in main currency (dollars)
+  status        String    // Payment status (completed, failed, etc.)
+  resourceId    String?   @db.ObjectId // Optional reference to a resource if it's a resource payment
+  metadata      Json?     // Additional payment metadata (plan details, etc.)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}

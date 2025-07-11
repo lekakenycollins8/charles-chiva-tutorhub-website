@@ -1,10 +1,10 @@
+"use client";
 import { pricingPlans } from '@/data/pricing';
 import { Check, BookOpen, GraduationCap, Trophy } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
 import PricingCTA from './PricingCTA';
+import PaystackPricingButton from './PaystackPricingButton';
 
 const icons = {
   BookOpen,
@@ -47,7 +47,8 @@ export default function PricingSection() {
                   </div>
                   <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
                   <div className="mt-4 flex items-baseline justify-center">
-                    <span className="text-4xl font-extrabold tracking-tight">${plan.price}</span>
+                    <span className="text-4xl font-extrabold tracking-tight">${plan.priceValue}</span>
+                    <span className="ml-1 text-xl text-gray-500">/{plan.priceUnit}</span>
                   </div>
                   <CardDescription className="mt-4 text-base">
                     {plan.description}
@@ -68,11 +69,9 @@ export default function PricingSection() {
                 </CardContent>
                 
                 <CardFooter className="pt-4 pb-8 px-6">
-                  <Button asChild className={`w-full py-6 text-white ${plan.buttonColor}`}>
-                    <Link href="/contact">
-                      Get Started
-                    </Link>
-                  </Button>
+                  <PaystackPricingButton 
+                    plan={plan}
+                  />
                 </CardFooter>
               </Card>
             );
