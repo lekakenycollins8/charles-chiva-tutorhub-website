@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -34,9 +35,13 @@ const Navbar = () => {
           <Link href="/" className="flex items-center space-x-2 group">
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
-              <div className="relative flex items-center justify-center w-10 h-10 bg-white rounded-full">
-                <span className="text-xl font-bold text-blue-600">C</span>
-              </div>
+              <Image
+                src="/images/chiva-logo.png"
+                alt="Chiva TutorHub"
+                width={40}
+                height={40}
+                className="relative rounded-full"
+              />
             </div>
             <div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">Chiva</span>

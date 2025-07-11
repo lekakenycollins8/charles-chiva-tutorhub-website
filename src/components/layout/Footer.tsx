@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Facebook, Instagram } from 'lucide-react';
-
+import Image from 'next/image';
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
@@ -24,18 +24,22 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Logo and Description */}
           <div className="col-span-1 md:col-span-4">
-            <Link href="/" className="flex items-center space-x-2 group">
-              <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
-                <div className="relative flex items-center justify-center w-10 h-10 bg-white rounded-full">
-                  <span className="text-xl font-bold text-blue-600">C</span>
-                </div>
-              </div>
-              <div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">Chiva</span>
-                <span className="text-xl font-bold text-gray-800">TutorHub</span>
-              </div>
-            </Link>
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
+              <Image
+                src="/images/chiva-logo.png"
+                alt="Chiva TutorHub"
+                width={40}
+                height={40}
+                className="relative rounded-full"
+              />
+            </div>
+            <div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">Chiva</span>
+              <span className="text-xl font-bold text-gray-800">TutorHub</span>
+            </div>
+          </Link>
             <p className="mt-6 text-gray-600 leading-relaxed">
               Professional tutoring services for Chemistry, Mathematics, Business Studies, and Accounting. We help students achieve academic excellence through personalized education.
             </p>
