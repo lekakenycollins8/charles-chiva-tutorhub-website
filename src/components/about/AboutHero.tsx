@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { person, aboutContent } from '@/data/aboutData';
 import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const AboutHero = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -48,11 +50,6 @@ const AboutHero = () => {
               <p className="text-blue-100/80">
                 To help students achieve their full potential through expert guidance and tailored learning experiences that build confidence and academic success.
               </p>
-              <div className="mt-6">
-                <button className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-lg transition-all hover:-translate-y-0.5">
-                  Learn More
-                </button>
-              </div>
             </div>
             
             {/* Middle panel - Tutor Profile */}
@@ -73,10 +70,6 @@ const AboutHero = () => {
                 <span className="px-2 py-1 bg-blue-600/30 rounded-md text-xs text-blue-100">10+ Years Exp</span>
                 <span className="px-2 py-1 bg-blue-600/30 rounded-md text-xs text-blue-100">{person.location}</span>
               </div>
-              
-              <button className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium rounded-lg transition-all hover:-translate-y-0.5">
-                Book a Session
-              </button>
             </div>
             
             {/* Right panel - Key Stats */}
@@ -121,12 +114,9 @@ const AboutHero = () => {
         <div className="mt-8 text-center">
           <p className="text-blue-100 mb-4">Ready to transform your academic journey?</p>
           <div className="flex flex-wrap justify-center gap-4">
-            <button className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-lg transition-all hover:-translate-y-0.5">
-              Get Started
-            </button>
-            <button className="px-6 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 font-medium rounded-lg transition-all hover:-translate-y-0.5">
-              Contact Us
-            </button>
+            <Link href="/contact">
+              <Button className='bg-blue-600 hover:bg-blue-700'>Contact Us</Button>
+            </Link>
           </div>
         </div>
       </div>

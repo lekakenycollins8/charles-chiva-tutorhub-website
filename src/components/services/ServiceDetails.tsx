@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { services } from '@/data/services';
 import { FaCheckCircle, FaGraduationCap } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+
 
 const ServiceDetails = () => {
   const [activeTab, setActiveTab] = useState<string>(services[0].id);
@@ -148,9 +150,14 @@ const ServiceDetails = () => {
                 <p className="text-gray-700 mb-4">
                   Book a session with our expert tutors and take the first step towards mastering {currentService.title}.
                 </p>
-                <button className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-lg hover:bg-blue-700 transition-all">
+                <motion.a
+                  href="/contact"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-lg hover:bg-blue-700 transition-all"
+                >
                   Book a Session
-                </button>
+                </motion.a>
               </div>
             </div>
           </div>

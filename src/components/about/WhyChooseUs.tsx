@@ -170,22 +170,15 @@ const WhyChooseUs = () => {
               viewport={{ once: true }}
               transition={{ delay: 0.8 }}
             >
-              <motion.button 
+              <motion.a 
+                href="/contact"
                 className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg transition-all hover:-translate-y-0.5"
                 whileHover={{ scale: 1.05, y: -4 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400 }}
               >
                 Book a Session
-              </motion.button>
-              <motion.button 
-                className="px-8 py-3 bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-lg shadow-lg transition-all hover:-translate-y-0.5"
-                whileHover={{ scale: 1.05, y: -4 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400 }}
-              >
-                Learn More
-              </motion.button>
+              </motion.a>
             </motion.div>
           </motion.div>
         </div>

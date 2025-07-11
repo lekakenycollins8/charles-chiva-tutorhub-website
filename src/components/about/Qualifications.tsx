@@ -147,16 +147,6 @@ const Qualifications = () => {
               </div>
             </motion.div>
           </div>
-          
-          {/* Bottom CTA */}
-          <div className="mt-16 text-center">
-            <p className="text-gray-700 mb-6 max-w-2xl mx-auto">
-              With extensive qualifications and experience across multiple subjects, I'm equipped to help you excel in your academic journey.
-            </p>
-            <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-lg transition-all hover:-translate-y-0.5">
-              Start Learning Today
-            </button>
-          </div>
         </div>
       </div>
     </section>

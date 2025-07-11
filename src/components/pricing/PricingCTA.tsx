@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageCircle, Shield, Clock, Award, Sparkles, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const CustomTutoringSection: React.FC = () => {
   return (
@@ -28,10 +29,15 @@ const CustomTutoringSection: React.FC = () => {
             that adapts to your learning style, schedule, and academic aspirations.
           </p>
           
-          <button className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white rounded-full hover:bg-blue-50 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
-            <span className="mr-2">Start Your Custom Journey</span>
+          <motion.a
+            href="/contact"
+            className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white rounded-full hover:bg-blue-50 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="mr-2">Start Your Journey</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-          </button>
+          </motion.a>
         </div>
       </div>
 

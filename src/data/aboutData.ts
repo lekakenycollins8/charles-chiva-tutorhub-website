@@ -7,7 +7,7 @@ export const person = {
         return `${this.firstName} ${this.lastName}`;
     },
     role: 'Professional Tutor',
-    avatar: '/pfp.jpg',
+    avatar: '/images/chiva-logo.png',
     location: 'Global',        
     languages: ['English', 'Swahili']  
 };
@@ -98,8 +98,7 @@ export const aboutContent = {
         description: "At CHIVA Tutorhub, I am committed to helping students unlock their full potential. Whether you are struggling with difficult concepts or aiming for top grades, I'm here to help you succeed. Let's work together to make learning enjoyable and effective!"
     },
     contact: {
-        email: "ochiengcharles1997@gmail.com",
-        phone: "+254719575186",
+        email: "chivatutorhub@gmail.com",
         instagram: "https://www.instagram.com/chiva_tutorhub/profilecard/?igsh=eGRsaHhkN2Y4eDls"
     }
 };
