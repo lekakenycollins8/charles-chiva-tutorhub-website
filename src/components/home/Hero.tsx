@@ -84,10 +84,6 @@ const Hero = () => {
               </Button>
               
               <Button size="default" className="bg-white text-blue-600 hover:bg-blue-50 rounded-full px-6 shadow-lg transition-all hover:scale-105">
-                <Link href="/contact">Start Your Journey</Link>
-              </Button>
-              
-              <Button variant="outline" size="default" className="border border-white/30 text-white hover:bg-white/10 rounded-full px-6 backdrop-blur-sm transition-all hover:border-white/50">
                 <Link href="/services">Explore Services</Link>
               </Button>
             </div>
