@@ -55,21 +55,11 @@ const FeaturedResources = async () => {
               className="group bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-50 flex flex-col h-full"
             >
               <div className="relative h-52 w-full overflow-hidden bg-gray-100">
-                {resource.fileUrl ? (
-                  <Image
-                    src={resource.fileUrl}
-                    alt={resource.title}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                    priority
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-                    <span className="text-4xl text-blue-400 font-bold">
-                      {resource.title.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+                  <span className="text-4xl text-blue-400 font-bold">
+                    {resource.title.charAt(0).toUpperCase()}
+                  </span>
+                </div>
                 <div
                   className={`absolute top-0 right-0 ${
                     resource.isPaid ? 'bg-blue-600' : 'bg-green-500'
