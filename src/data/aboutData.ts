@@ -65,10 +65,10 @@ export const aboutContent = {
             "I believe in personalized learning that adapts to each student's individual needs.",
             "My goal is to break down complex concepts into understandable, manageable parts, ensuring that each student feels confident and empowered.",
             "I use a variety of teaching techniques, including:",
-            "• Interactive problem-solving to reinforce theoretical knowledge",
-            "• Real-world applications to connect academic content with practical skills",
-            "• Focused one-on-one attention to address specific learning gaps",
-            "• Ongoing progress assessments to track improvements and adjust the learning plan"
+            "Interactive problem-solving to reinforce theoretical knowledge",
+            "Real-world applications to connect academic content with practical skills",
+            "Focused one-on-one attention to address specific learning gaps",
+            "Ongoing progress assessments to track improvements and adjust the learning plan"
         ],
         conclusion: "I aim to make every session engaging, motivating, and focused on your academic goals. Whether you're preparing for exams, tackling difficult assignments, or simply looking to improve your understanding of key concepts, I'm here to support you every step of the way."
     },
