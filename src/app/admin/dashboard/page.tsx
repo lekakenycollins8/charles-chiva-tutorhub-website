@@ -141,7 +141,7 @@ export default async function AdminDashboard() {
             Add New Resource
           </a>
           <a 
-            href="/admin/dashboard/blog/new" 
+            href="/admin/dashboard/blogs/new" 
             className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
           >
             Create Blog Post
