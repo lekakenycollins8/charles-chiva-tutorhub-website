@@ -140,92 +140,6 @@ export async function getResource(id: string) {
 // Function to create a new resource
 export async function createResource(formData: FormData) {
   try {
-    // Handle file upload
-    const file = formData.get("file") as File;
-    
-    if (!file) {
-      throw new Error("No file provided");
-    }
-    
-    // Upload file to Cloudinary via our API endpoint
-    const fileTypeFromForm = formData.get("fileType") as string || "PDF";
-    // Map the form fileType to the API fileType
-    const apiFileType = mapFileTypeToApiType(fileTypeFromForm);
-    
-    const uploadFormData = new FormData();
-    uploadFormData.append("file", file);
-    uploadFormData.append("fileType", apiFileType);
-    
-    // In server actions, we need to use an absolute URL for fetch
-    // Determine the base URL based on environment
-    const protocol = process.env.NODE_ENV === 'development' ? 'http:' : 'https:';
-    const host = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'localhost:3000';
-    const baseUrl = `${protocol}//${host}`;
-    
-    console.log(`Uploading file to ${baseUrl}/api/upload`);
-    
-    const uploadResponse = await fetch(`${baseUrl}/api/upload`, {
-      method: "POST",
-      body: uploadFormData,
-    });
-    
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.json();
-      throw new Error(errorData.error || "Failed to upload file");
-    }
-    
-    const uploadResult = await uploadResponse.json();
-    
-    // Prepare resource data
-    const isPaid = formData.get("isPaid") === "true";
-    const resourceData: any = {
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      fileUrl: uploadResult.url,
-      fileType: uploadResult.type,
-      fileSize: uploadResult.size,
-      isPaid,
-      category: formData.get("category") as string,
-    };
-    
-    // Add price if it's a paid resource
-    if (isPaid) {
-      resourceData.price = parseFloat(formData.get("price") as string);
-    } else {
-      resourceData.price = null;
-    }
-    
-    // Create resource in database
-    const resource = await prisma.resource.create({
-      data: resourceData
-    });
-    
-    // Revalidate the resources path to update the UI
-    revalidatePath("/admin/dashboard/resources");
-    revalidatePath("/resources");
-    
-    return { success: true, resource };
-  } catch (error) {
-    console.error("Error creating resource:", error);
-    return { 
-      success: false, 
-      message: error instanceof Error ? error.message : "Failed to create resource" 
-    };
-  }
-}
-
-// Function to update a resource
-export async function updateResource(id: string, formData: FormData) {
-  try {
-    // Check if resource exists
-    const existingResource = await prisma.resource.findUnique({
-      where: { id }
-    });
-    
-    if (!existingResource) {
-      throw new Error(`Resource with ID ${id} not found`);
-    }
-    
     // Extract form data
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
@@ -243,20 +157,87 @@ export async function updateResource(id: string, formData: FormData) {
         message: 'Missing required fields'
       };
     }
+
+    // Create resource in database
+    const resource = await prisma.resource.create({
+      data: {
+        title,
+        description,
+        fileType,
+        isPaid,
+        price,
+        category,
+        fileUrl,
+        fileSize,
+      }
+    });
+
+    // Revalidate the resources path to update the UI
+    revalidatePath("/admin/dashboard/resources");
+    revalidatePath("/resources");
+
+    return {
+      success: true,
+      resource
+    };
+  } catch (error) {
+    console.error("Error creating resource:", error);
+    return { 
+      success: false, 
+      message: error instanceof Error ? error.message : "Failed to create resource" 
+    };
+  }
+}
+
+// Function to update an existing resource
+export async function updateResource(id: string, formData: FormData) {
+  try {
+    // Find existing resource
+    const existingResource = await prisma.resource.findUnique({
+      where: { id }
+    });
     
-    // Prepare resource data for update
+    if (!existingResource) {
+      return {
+        success: false,
+        message: `Resource with ID ${id} not found`
+      };
+    }
+    
+    // Extract form data
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const category = formData.get('category') as string;
+    const isPaid = formData.get('isPaid') === 'true';
+    const fileType = formData.get('fileType') as string;
+    const fileUrl = formData.get('fileUrl') as string;
+    const price = isPaid ? parseFloat(formData.get('price') as string) : null;
+
+    // Validate required fields
+    if (!title || !description || !category || !fileType) {
+      return {
+        success: false,
+        message: 'Missing required fields'
+      };
+    }
+    
+    // Prepare update data
     const updateData: any = {
       title,
       description,
-      fileType,
+      category,
       isPaid,
       price,
-      category,
-      fileUrl,
-      fileSize,
+      fileType
     };
     
-    // Update the resource in database
+    // Only update file-related fields if a new file was uploaded
+    if (fileUrl && fileUrl !== existingResource.fileUrl) {
+      updateData.fileUrl = fileUrl;
+      updateData.fileSize = parseInt(formData.get('fileSize') as string, 10);
+    }
+    
+    // Update resource in database
     const resource = await prisma.resource.update({
       where: { id },
       data: updateData
@@ -264,14 +245,19 @@ export async function updateResource(id: string, formData: FormData) {
     
     // Revalidate the resources path to update the UI
     revalidatePath("/admin/dashboard/resources");
-    revalidatePath(`/admin/dashboard/resources/${id}`);
     revalidatePath("/resources");
-    revalidatePath(`/resources/${id}`);
+    revalidatePath(`/resources/${resource.id}`);
     
-    return { success: true, resource };
+    return {
+      success: true,
+      resource
+    };
   } catch (error) {
-    console.error(`Error updating resource ${id}:`, error);
-    return { success: false, message: error instanceof Error ? error.message : "Failed to update resource" };
+    console.error('Error updating resource:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An error occurred while updating the resource'
+    };
   }
 }
 
