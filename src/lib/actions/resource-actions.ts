@@ -315,3 +315,75 @@ export async function incrementDownloadCount(id: string) {
     return { success: false, message: error instanceof Error ? error.message : "Failed to increment download count" };
   }
 }
+
+// Function to fetch featured resources for the homepage
+export async function getFeaturedResources(limit: number = 3) {
+  try {
+    // Strategy: Get a mix of most downloaded and newest resources
+    // First get top downloaded resources
+    const topDownloaded = await prisma.resource.findMany({
+      orderBy: { downloads: 'desc' },
+      take: Math.ceil(limit / 2),
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        fileUrl: true,
+        fileType: true,
+        fileSize: true,
+        isPaid: true,
+        price: true,
+        category: true,
+        downloads: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+    
+    // Then get newest resources, excluding those already in topDownloaded
+    const topDownloadedIds = topDownloaded.map(resource => resource.id);
+    const newest = await prisma.resource.findMany({
+      where: {
+        id: { notIn: topDownloadedIds }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit - topDownloaded.length,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        fileUrl: true,
+        fileType: true,
+        fileSize: true,
+        isPaid: true,
+        price: true,
+        category: true,
+        downloads: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+    
+    // Combine and shuffle the results to create a diverse featured list
+    const featured = [...topDownloaded, ...newest];
+    
+    // Simple shuffle algorithm (Fisher-Yates)
+    for (let i = featured.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [featured[i], featured[j]] = [featured[j], featured[i]];
+    }
+    
+    return { 
+      success: true, 
+      data: featured.slice(0, limit),
+      error: null 
+    };
+  } catch (error) {
+    console.error("Error fetching featured resources:", error);
+    return { 
+      success: false, 
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to fetch featured resources" 
+    };
+  }
+}

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { getResources } from '@/lib/actions/resource-actions';
+import { getFeaturedResources } from '@/lib/actions/resource-actions';
 
 interface Resource {
   id: string;
@@ -20,18 +20,11 @@ interface Resource {
 }
 
 const FeaturedResources = async () => {
-  // Fetch resources on the server side
-  const { data: resources } = await getResources();
+  // Fetch featured resources on the server side
+  const { data: featuredResources, success } = await getFeaturedResources(3);
   
-  // Sort by downloads and get top 3
-  const featuredResources = resources
-    ? [...resources]
-        .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
-        .slice(0, 3)
-    : [];
-
-  // If no resources are found, don't render anything
-  if (!featuredResources || featuredResources.length === 0) {
+  // If no resources are found or there was an error, don't render anything
+  if (!success || !featuredResources || featuredResources.length === 0) {
     return null;
   }
 
