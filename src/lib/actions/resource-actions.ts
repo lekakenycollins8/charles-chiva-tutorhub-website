@@ -2,9 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 // Type definitions
@@ -130,46 +127,46 @@ export async function createResource(formData: FormData) {
       throw new Error("No file provided");
     }
     
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    try {
-      if (!existsSync(uploadsDir)) {
-        await mkdir(uploadsDir, { recursive: true });
-        // Create .gitkeep to ensure the directory is tracked by git
-        await writeFile(path.join(uploadsDir, '.gitkeep'), '');
-      }
-    } catch (error) {
-      console.error("Error creating uploads directory:", error);
-      return { success: false, message: 'Failed to create uploads directory' };
+    // Upload file to Cloudinary via our API endpoint
+    const fileType = formData.get("fileType") as string || "document";
+    const uploadFormData = new FormData();
+    uploadFormData.append("file", file);
+    uploadFormData.append("fileType", fileType);
+    
+    const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/upload`, {
+      method: "POST",
+      body: uploadFormData,
+    });
+    
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json();
+      throw new Error(errorData.error || "Failed to upload file");
     }
     
-    // Generate a unique filename
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = path.join(uploadsDir, fileName);
+    const uploadResult = await uploadResponse.json();
     
-    // Convert file to buffer and save it
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    // Prepare resource data
+    const isPaid = formData.get("isPaid") === "true";
+    const resourceData: any = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      fileUrl: uploadResult.url,
+      fileType: uploadResult.type,
+      fileSize: uploadResult.size,
+      isPaid,
+      category: formData.get("category") as string,
+    };
     
-    // File metadata
-    const fileUrl = `/uploads/${fileName}`;
-    const fileType = file.type;
-    const fileSize = file.size;
+    // Add price if it's a paid resource
+    if (isPaid) {
+      resourceData.price = parseFloat(formData.get("price") as string);
+    } else {
+      resourceData.price = null;
+    }
     
     // Create resource in database
     const resource = await prisma.resource.create({
-      data: {
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
-        fileUrl,
-        fileType,
-        fileSize,
-        isPaid: formData.get("isPaid") === "true",
-        price: formData.get("isPaid") === "true" ? parseFloat(formData.get("price") as string) : null,
-        category: formData.get("category") as string,
-        downloads: 0
-      }
+      data: resourceData
     });
     
     // Revalidate the resources path to update the UI
@@ -202,31 +199,28 @@ export async function updateResource(id: string, formData: FormData) {
     let fileSize = existingResource.fileSize;
     
     if (file) {
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-      try {
-        if (!existsSync(uploadsDir)) {
-          await mkdir(uploadsDir, { recursive: true });
-          // Create .gitkeep to ensure the directory is tracked by git
-          await writeFile(path.join(uploadsDir, '.gitkeep'), '');
-        }
-      } catch (error) {
-        console.error("Error creating uploads directory:", error);
-        return { success: false, message: 'Failed to create uploads directory' };
+      // Upload file to Cloudinary via our API endpoint
+      const uploadFileType = formData.get("fileType") as string || "document";
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+      uploadFormData.append("fileType", uploadFileType);
+      
+      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/upload`, {
+        method: "POST",
+        body: uploadFormData,
+      });
+      
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.error || "Failed to upload file");
       }
       
-      // Generate a unique filename
-      const fileName = `${uuidv4()}.${file.name.split('.').pop()}`;
-      const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
-      
-      // Convert file to buffer and save it
-      const buffer = Buffer.from(await file.arrayBuffer());
-      await writeFile(filePath, buffer);
+      const uploadResult = await uploadResponse.json();
       
       // Update file metadata
-      fileUrl = `/uploads/${fileName}`;
-      fileType = file.type;
-      fileSize = file.size;
+      fileUrl = uploadResult.url;
+      fileType = uploadResult.type;
+      fileSize = uploadResult.size;
     }
     
     // Prepare resource data for update
