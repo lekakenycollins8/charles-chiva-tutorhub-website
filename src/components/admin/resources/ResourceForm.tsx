@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { createResource, updateResource } from "@/lib/actions/resource-actions";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 // Define the categories
 const RESOURCE_CATEGORIES = [
@@ -69,6 +70,7 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -125,14 +127,25 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
         formDataToSend.append("price", formData.price.toString());
       }
       
+      // If there's a file to upload, show upload progress
       if (file) {
+        setUploadProgress(10);
+        toast.info("Uploading file...", {
+          description: "Please wait while your file is being uploaded."
+        });
         formDataToSend.append("file", file);
+        setUploadProgress(50);
       }
       
       // Submit the form
       if (isEditing && resource) {
         const result = await updateResource(resource.id, formDataToSend);
         if (result.success) {
+          setUploadProgress(100);
+          toast.success("Resource updated successfully", {
+            description: "Your resource has been updated and is now available.",
+            icon: <CheckCircle className="h-4 w-4" />
+          });
           router.push("/admin/dashboard/resources");
           router.refresh();
         } else {
@@ -141,16 +154,25 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
       } else {
         const result = await createResource(formDataToSend);
         if (result.success) {
+          setUploadProgress(100);
+          toast.success("Resource created successfully", {
+            description: "Your resource has been uploaded and is now available.",
+            icon: <CheckCircle className="h-4 w-4" />
+          });
           router.push("/admin/dashboard/resources");
           router.refresh();
         } else {
           throw new Error(result.message || "Failed to create resource");
         }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+      toast.error("Error", {
+        description: err.message || "An error occurred while processing your request."
+      });
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
   
@@ -268,7 +290,7 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
       {/* Price (only shown if isPaid is true) */}
       {formData.isPaid && (
         <div className="space-y-2">
-          <Label htmlFor="price">Price (£) *</Label>
+          <Label htmlFor="price">Price ($) *</Label>
           <Input
             id="price"
             name="price"

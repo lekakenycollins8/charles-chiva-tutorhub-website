@@ -5,7 +5,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, CheckCircle } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { getBlogPosts } from "@/lib/actions/blog-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 // Define form schema
 const formSchema = z.object({
@@ -165,8 +166,14 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
   };
 
   const handleSubmit = async (values: FormValues) => {
+    setLoading(true);
     try {
-      setLoading(true);
+      // Show toast for image upload if there's a cover image
+      if (values.coverImage && !initialData?.coverImage) {
+        toast.info("Uploading image...", {
+          description: "Your cover image is being uploaded."
+        });
+      }
       
       // Normalize the slug regardless of how it was entered
       const normalizedSlug = normalizeSlug(values.slug);
@@ -183,10 +190,23 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
       console.log("Submitting blog post with normalized slug:", formattedValues);
       
       await onSubmit(formattedValues);
+      
+      // Show success message
+      toast.success(initialData ? "Blog post updated successfully" : "Blog post created successfully", {
+        description: initialData 
+          ? "Your blog post has been updated and saved." 
+          : "Your blog post has been created and saved.",
+        icon: <CheckCircle className="h-4 w-4" />
+      });
+      
+      // Navigate back to blogs dashboard
       router.push("/admin/dashboard/blogs");
+      router.refresh();
     } catch (error) {
-      console.error("Error submitting blog post:", error);
-      alert("Failed to save blog post. Please try again.");
+      console.error("Error submitting form:", error);
+      toast.error("Error", {
+        description: error instanceof Error ? error.message : "An error occurred while saving your blog post."
+      });
     } finally {
       setLoading(false);
     }
@@ -288,7 +308,15 @@ export default function BlogForm({ initialData, onSubmit }: BlogFormProps) {
               <FormLabel>Cover Image</FormLabel>
               <ImageUpload
                 value={field.value || ""}
-                onChange={field.onChange}
+                onChange={(url) => {
+                  if (url && !field.value) {
+                    toast.success("Image uploaded successfully", {
+                      description: "Your cover image has been uploaded.",
+                      icon: <CheckCircle className="h-4 w-4" />
+                    });
+                  }
+                  field.onChange(url);
+                }}
                 disabled={loading}
               />
               <FormMessage />

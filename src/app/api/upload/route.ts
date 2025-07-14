@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
-import { existsSync } from "fs";
+import cloudinary from "@/lib/cloudinary";
+import { Readable } from "stream";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Validate file type based on fileType parameter
     let validTypes: string[] = [];
     let maxSize = 0;
-    let uploadSubDir = "";
+    let uploadFolder = "";
     
     if (fileType === "video") {
       // Common video formats
@@ -29,12 +28,17 @@ export async function POST(request: NextRequest) {
         "video/x-msvideo", "video/x-ms-wmv", "video/x-flv", "video/3gpp"
       ];
       maxSize = 100 * 1024 * 1024; // 100MB for videos
-      uploadSubDir = "videos";
+      uploadFolder = "tutorhub-videos";
+    } else if (fileType === "document") {
+      // Document formats
+      validTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+      maxSize = 10 * 1024 * 1024; // 10MB for documents
+      uploadFolder = "tutorhub-documents";
     } else {
       // Default to images
       validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       maxSize = 5 * 1024 * 1024; // 5MB for images
-      uploadSubDir = "images";
+      uploadFolder = "tutorhub-images";
     }
 
     if (!validTypes.includes(file.type)) {
@@ -53,47 +57,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create unique filename
+    // Get file data
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // Get file extension
-    const fileExtension = file.name.split(".").pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
+    // Generate a unique public_id for the file
+    const uniqueId = uuidv4();
     
-    // Create uploads directory if it doesn't exist
-    const baseUploadDir = join(process.cwd(), "public", "uploads");
-    const uploadDir = join(baseUploadDir, uploadSubDir);
+    // Create a readable stream from the buffer
+    const stream = Readable.from(buffer);
     
-    try {
-      if (!existsSync(baseUploadDir)) {
-        await mkdir(baseUploadDir, { recursive: true });
-      }
-      
-      if (!existsSync(uploadDir)) {
-        await mkdir(uploadDir, { recursive: true });
-      }
-    } catch (err) {
-      console.error("Error creating upload directories:", err);
-      return NextResponse.json(
-        { error: "Server error: Could not create upload directory" },
-        { status: 500 }
+    // Upload to Cloudinary
+    return new Promise<NextResponse>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: uploadFolder,
+          public_id: uniqueId,
+          resource_type: fileType === "video" ? "video" : fileType === "document" ? "raw" : "image",
+        },
+        (error, result) => {
+          if (error) {
+            console.error("Cloudinary upload error:", error);
+            resolve(NextResponse.json(
+              { error: "Error uploading file to cloud storage" },
+              { status: 500 }
+            ));
+            return;
+          }
+          
+          // Return the URL to the uploaded file
+          resolve(NextResponse.json({
+            url: result?.secure_url,
+            type: file.type,
+            size: file.size,
+            name: file.name,
+            public_id: result?.public_id
+          }, { status: 200 }));
+        }
       );
-    }
-    
-    // Write file to disk
-    const filePath = join(uploadDir, fileName);
-    await writeFile(filePath, buffer);
-    
-    // Return the URL to the uploaded file
-    const fileUrl = `/uploads/${uploadSubDir}/${fileName}`;
-    
-    return NextResponse.json({
-      url: fileUrl,
-      type: file.type,
-      size: file.size,
-      name: file.name
-    }, { status: 200 });
+      
+      // @ts-ignore - Cloudinary types are not perfect
+      stream.pipe(uploadStream);
+    }) as Promise<NextResponse>;
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(
