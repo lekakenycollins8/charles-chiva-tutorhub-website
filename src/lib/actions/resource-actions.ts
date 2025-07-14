@@ -4,6 +4,26 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { v4 as uuidv4 } from 'uuid';
 
+// Map ResourceForm fileType to upload API fileType
+function mapFileTypeToApiType(fileType: string): string {
+  // Map ResourceForm fileType values to API fileType values
+  switch (fileType) {
+    case "PDF":
+    case "Document":
+    case "Presentation":
+    case "Spreadsheet":
+      return "document";
+    case "Video":
+    case "Audio":
+      return "video";
+    case "Image":
+      return "image";
+    default:
+      // Default to document for other types
+      return "document";
+  }
+}
+
 // Type definitions
 export interface ResourceData {
   id?: string;
@@ -128,12 +148,20 @@ export async function createResource(formData: FormData) {
     }
     
     // Upload file to Cloudinary via our API endpoint
-    const fileType = formData.get("fileType") as string || "document";
+    const fileTypeFromForm = formData.get("fileType") as string || "PDF";
+    // Map the form fileType to the API fileType
+    const apiFileType = mapFileTypeToApiType(fileTypeFromForm);
+    
     const uploadFormData = new FormData();
     uploadFormData.append("file", file);
-    uploadFormData.append("fileType", fileType);
+    uploadFormData.append("fileType", apiFileType);
     
-    const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/upload`, {
+    // Construct a proper absolute URL that works in both development and production
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    const uploadResponse = await fetch(`${baseUrl}/api/upload`, {
       method: "POST",
       body: uploadFormData,
     });
@@ -200,12 +228,20 @@ export async function updateResource(id: string, formData: FormData) {
     
     if (file) {
       // Upload file to Cloudinary via our API endpoint
-      const uploadFileType = formData.get("fileType") as string || "document";
+      const fileTypeFromForm = formData.get("fileType") as string || "PDF";
+      // Map the form fileType to the API fileType
+      const apiFileType = mapFileTypeToApiType(fileTypeFromForm);
+      
       const uploadFormData = new FormData();
       uploadFormData.append("file", file);
-      uploadFormData.append("fileType", uploadFileType);
+      uploadFormData.append("fileType", apiFileType);
       
-      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/upload`, {
+      // Construct a proper absolute URL that works in both development and production
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      
+      const uploadResponse = await fetch(`${baseUrl}/api/upload`, {
         method: "POST",
         body: uploadFormData,
       });
