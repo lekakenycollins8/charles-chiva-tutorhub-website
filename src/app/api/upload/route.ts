@@ -61,8 +61,12 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // Generate a unique public_id for the file
-    const uniqueId = uuidv4();
+    // Extract original file name and extension
+    const originalFileName = file.name;
+    const fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
+    
+    // Generate a unique public_id for the file with the original extension
+    const uniqueId = `${uuidv4()}${fileExtension}`;
     
     // Create a readable stream from the buffer
     const stream = Readable.from(buffer);
