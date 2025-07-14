@@ -156,10 +156,13 @@ export async function createResource(formData: FormData) {
     uploadFormData.append("file", file);
     uploadFormData.append("fileType", apiFileType);
     
-    // Construct a proper absolute URL that works in both development and production
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // In server actions, we need to use an absolute URL for fetch
+    // Determine the base URL based on environment
+    const protocol = process.env.NODE_ENV === 'development' ? 'http:' : 'https:';
+    const host = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'localhost:3000';
+    const baseUrl = `${protocol}//${host}`;
+    
+    console.log(`Uploading file to ${baseUrl}/api/upload`);
     
     const uploadResponse = await fetch(`${baseUrl}/api/upload`, {
       method: "POST",
@@ -236,10 +239,13 @@ export async function updateResource(id: string, formData: FormData) {
       uploadFormData.append("file", file);
       uploadFormData.append("fileType", apiFileType);
       
-      // Construct a proper absolute URL that works in both development and production
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
-        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      // In server actions, we need to use an absolute URL for fetch
+      // Determine the base URL based on environment
+      const protocol = process.env.NODE_ENV === 'development' ? 'http:' : 'https:';
+      const host = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'localhost:3000';
+      const baseUrl = `${protocol}//${host}`;
+      
+      console.log(`Uploading file to ${baseUrl}/api/upload`);
       
       const uploadResponse = await fetch(`${baseUrl}/api/upload`, {
         method: "POST",
