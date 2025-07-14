@@ -30,21 +30,29 @@ export default function DownloadButton({
     // Check for token in URL on component mount
     const token = searchParams.get('token');
     const paymentStatus = searchParams.get('payment');
+    const reference = searchParams.get('reference');
+    const trxref = searchParams.get('trxref');
     
     if (token && paymentStatus === 'success') {
       // Store the token in localStorage for future use
       localStorage.setItem(`download-token-${resourceId}`, token);
       setHasValidToken(true);
       
-      // Clean up the URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('token');
-      url.searchParams.delete('payment');
-      window.history.replaceState({}, '', url.toString());
+      // Clean up the URL but ensure the page is fully loaded first
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('token');
+        url.searchParams.delete('payment');
+        url.searchParams.delete('reference');
+        url.searchParams.delete('trxref');
+        window.history.replaceState({}, '', url.toString());
+        // Force a refresh to ensure the component re-renders properly
+        router.refresh();
+      }, 500);
     } else if (localStorage.getItem(`download-token-${resourceId}`)) {
       setHasValidToken(true);
     }
-  }, [resourceId, searchParams]);
+  }, [resourceId, searchParams, router]);
 
   const handleDownload = async () => {
     if (isPaid && !hasValidToken) {
