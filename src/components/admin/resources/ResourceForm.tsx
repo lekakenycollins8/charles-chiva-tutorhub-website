@@ -115,60 +115,104 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
         throw new Error("Price must be greater than 0 for paid resources");
       }
       
-      // Create FormData for submission
-      const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("category", formData.category);
-      formDataToSend.append("isPaid", formData.isPaid.toString());
-      formDataToSend.append("fileType", formData.fileType);
+      // If there's a file to upload, upload it first via the API directly
+      let fileUrl = resource?.fileUrl || "";
+      let fileType = formData.fileType;
+      let fileSize = resource?.fileSize || 0;
       
-      if (formData.isPaid) {
-        formDataToSend.append("price", formData.price.toString());
-      }
-      
-      // If there's a file to upload, show upload progress
       if (file) {
         setUploadProgress(10);
         toast.info("Uploading file...", {
           description: "Please wait while your file is being uploaded."
         });
-        formDataToSend.append("file", file);
-        setUploadProgress(50);
+        
+        // Create FormData for file upload
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
+        
+        // Map the form fileType to the API fileType
+        let apiFileType = "document";
+        if (["PDF", "Document", "Presentation", "Spreadsheet"].includes(formData.fileType)) {
+          apiFileType = "document";
+        } else if (["Video", "Audio"].includes(formData.fileType)) {
+          apiFileType = "video";
+        } else if (["Image"].includes(formData.fileType)) {
+          apiFileType = "image";
+        }
+        
+        uploadFormData.append("fileType", apiFileType);
+        
+        // Upload the file directly to the API
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData
+        });
+        
+        setUploadProgress(70);
+        
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.json();
+          throw new Error(error.error || 'Failed to upload file');
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        fileUrl = uploadResult.url;
+        fileType = uploadResult.type;
+        fileSize = uploadResult.size;
+        
+        setUploadProgress(100);
       }
       
-      // Submit the form
+      // Create FormData for resource submission
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("isPaid", formData.isPaid.toString());
+      formDataToSend.append("fileType", fileType);
+      formDataToSend.append("fileUrl", fileUrl);
+      formDataToSend.append("fileSize", fileSize.toString());
+      
+      if (formData.isPaid) {
+        formDataToSend.append("price", formData.price.toString());
+      }
+      
+      // Submit the form without the file (already uploaded)
       if (isEditing && resource) {
+        // Update existing resource
         const result = await updateResource(resource.id, formDataToSend);
+        
         if (result.success) {
-          setUploadProgress(100);
-          toast.success("Resource updated successfully", {
-            description: "Your resource has been updated and is now available.",
+          toast.success("Resource updated", {
+            description: "Your resource has been updated successfully.",
             icon: <CheckCircle className="h-4 w-4" />
           });
           router.push("/admin/dashboard/resources");
           router.refresh();
         } else {
-          throw new Error(result.message || "Failed to update resource");
+          throw new Error(result.message || "Error updating resource");
         }
       } else {
+        // Create new resource
         const result = await createResource(formDataToSend);
+        
         if (result.success) {
-          setUploadProgress(100);
-          toast.success("Resource created successfully", {
-            description: "Your resource has been uploaded and is now available.",
+          toast.success("Resource created", {
+            description: "Your resource has been created successfully.",
             icon: <CheckCircle className="h-4 w-4" />
           });
           router.push("/admin/dashboard/resources");
           router.refresh();
         } else {
-          throw new Error(result.message || "Failed to create resource");
+          throw new Error(result.message || "Error creating resource");
         }
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      console.error("Error submitting form:", err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
       toast.error("Error", {
-        description: err.message || "An error occurred while processing your request."
+        description: err instanceof Error ? err.message : "An unknown error occurred",
+        icon: <AlertCircle className="h-4 w-4" />
       });
     } finally {
       setIsSubmitting(false);
