@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
@@ -19,6 +19,11 @@ export const ImageUpload = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Update preview when value changes (for editing existing posts)
+  useEffect(() => {
+    setPreview(value || null);
+  }, [value]);
+
   const handleClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -32,7 +37,7 @@ export const ImageUpload = ({
     try {
       setIsUploading(true);
       
-      // Create a local preview
+      // Create a temporary local preview while uploading
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreview(event.target?.result as string);
@@ -54,9 +59,14 @@ export const ImageUpload = ({
       }
 
       const data = await response.json();
+      
+      // Update preview to use the uploaded URL and update form
+      setPreview(data.url);
       onChange(data.url);
     } catch (error) {
       console.error("Error uploading image:", error);
+      // Reset preview on error
+      setPreview(null);
     } finally {
       setIsUploading(false);
     }

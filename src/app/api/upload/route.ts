@@ -61,12 +61,11 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // Extract original file name and extension
+    // Extract original file name for reference
     const originalFileName = file.name;
-    const fileExtension = originalFileName.substring(originalFileName.lastIndexOf('.'));
     
-    // Generate a unique public_id for the file with the original extension
-    const uniqueId = `${uuidv4()}${fileExtension}`;
+    // Generate a unique public_id for the file (without extension - Cloudinary handles format automatically)
+    const uniqueId = uuidv4();
     
     // Create a readable stream from the buffer
     const stream = Readable.from(buffer);
