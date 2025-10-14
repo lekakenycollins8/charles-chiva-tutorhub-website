@@ -16,7 +16,13 @@ export interface Resource {
 export interface ResourceResponse {
   success: boolean;
   data: Resource[];
-  error: string | null;
+  error?: string | null;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface SingleResourceResponse {

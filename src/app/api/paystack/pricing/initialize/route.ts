@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 export async function POST(request: Request) {
   try {
-    const { planId, quantity, email } = await request.json();
+    const { planId, quantity, email, country, city } = await request.json();
     
     if (!planId || !quantity || !email) {
       return NextResponse.json(
@@ -52,6 +52,8 @@ export async function POST(request: Request) {
         unitPrice: plan.priceValue,
         priceUnit: plan.priceUnit,
         totalAmount: totalAmount / 100, // Store in dollars for readability
+        country: country || 'Not specified',
+        city: city || 'Not specified',
         custom_fields: [
           {
             display_name: "Plan",
@@ -67,6 +69,16 @@ export async function POST(request: Request) {
             display_name: "Unit",
             variable_name: "unit",
             value: plan.priceUnit
+          },
+          {
+            display_name: "Country",
+            variable_name: "country",
+            value: country || 'Not specified'
+          },
+          {
+            display_name: "City",
+            variable_name: "city",
+            value: city || 'Not specified'
           }
         ]
       }

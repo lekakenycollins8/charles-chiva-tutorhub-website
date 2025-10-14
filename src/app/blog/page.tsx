@@ -9,11 +9,14 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Tag, FolderOpen, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { Loader2, Tag, FolderOpen, Calendar, Clock, ChevronRight, ChevronLeft } from 'lucide-react';
+
+const POSTS_PER_PAGE = 9;
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -64,6 +67,21 @@ export default function BlogPage() {
   
   // Use all posts without filtering
   const filteredPosts = posts;
+  
+  // Calculate pagination
+  const totalPosts = filteredPosts.length;
+  const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  const paginatedPosts = filteredPosts.slice(startIndex, endIndex);
+  
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
   
   // Format date in a more readable way
   const formatDate = (dateString: string | Date) => {
@@ -137,7 +155,7 @@ export default function BlogPage() {
         ) : (
           <>
             {/* Featured Post (first post) */}
-            {filteredPosts.length > 0 && (
+            {paginatedPosts.length > 0 && currentPage === 1 && (
               <div className="mb-16">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
                   <span className="bg-blue-600 w-1 h-8 inline-block mr-3"></span>
@@ -146,42 +164,42 @@ export default function BlogPage() {
                 <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <div className="md:flex">
                     <div className="md:w-1/2">
-                      {filteredPosts[0].coverImage ? (
+                      {paginatedPosts[0].coverImage ? (
                         <div className="relative h-64 md:h-full">
                           <Image 
-                            src={filteredPosts[0].coverImage} 
-                            alt={filteredPosts[0].title}
+                            src={paginatedPosts[0].coverImage} 
+                            alt={paginatedPosts[0].title}
                             fill
                             className="object-cover"
                           />
                         </div>
                       ) : (
                         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 h-64 md:h-full flex items-center justify-center">
-                          <h3 className="text-3xl font-bold text-white px-6 text-center">{filteredPosts[0].title}</h3>
+                          <h3 className="text-3xl font-bold text-white px-6 text-center">{paginatedPosts[0].title}</h3>
                         </div>
                       )}
                     </div>
                     <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-between">
                       <div>
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {filteredPosts[0].categories?.map((category, index) => (
+                          {paginatedPosts[0].categories?.map((category, index) => (
                             <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                               {category}
                             </Badge>
                           ))}
                         </div>
-                        <h3 className="text-2xl font-bold mb-4 text-gray-800">{filteredPosts[0].title}</h3>
-                        <p className="text-gray-600 mb-6 line-clamp-3">{filteredPosts[0].excerpt}</p>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-800">{paginatedPosts[0].title}</h3>
+                        <p className="text-gray-600 mb-6 line-clamp-3">{paginatedPosts[0].excerpt}</p>
                       </div>
                       <div>
                         <div className="flex items-center text-sm text-gray-500 mb-4">
                           <Calendar className="h-4 w-4 mr-2" />
-                          <span>{formatDate(filteredPosts[0].createdAt)}</span>
+                          <span>{formatDate(paginatedPosts[0].createdAt)}</span>
                           <span className="mx-2">•</span>
                           <Clock className="h-4 w-4 mr-2" />
-                          <span>{calculateReadingTime(filteredPosts[0].content)} min read</span>
+                          <span>{calculateReadingTime(paginatedPosts[0].content)} min read</span>
                         </div>
-                        <Link href={`/blog/${filteredPosts[0].slug}`}>
+                        <Link href={`/blog/${paginatedPosts[0].slug}`}>
                           <Button className="w-full md:w-auto">
                             Read Article <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
@@ -200,7 +218,7 @@ export default function BlogPage() {
                 Latest Articles
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredPosts.slice(1).map((post) => (
+                {(currentPage === 1 ? paginatedPosts.slice(1) : paginatedPosts).map((post) => (
                   <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                     {post.coverImage && (
                       <div className="relative w-full h-48 overflow-hidden">
@@ -242,6 +260,37 @@ export default function BlogPage() {
                 ))}
               </div>
             </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Card className="mt-12">
+                <CardFooter className="flex items-center justify-between px-6 py-4">
+                  <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages} • {totalPosts} total posts
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="ml-2">Previous</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <span className="mr-2">Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            )}
           </>
         )}
       </div>

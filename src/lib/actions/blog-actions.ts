@@ -19,6 +19,10 @@ export async function createBlogPost(blogPost: BlogPost) {
       throw new Error("User not authenticated");
     }
     
+    // Ensure isPublished and isDraft are consistent
+    const isPublished = blogPost.isPublished || false;
+    const isDraft = !isPublished; // isDraft is opposite of isPublished
+    
     // Create the blog post with all required fields
     await prisma.blogPost.create({
       data: {
@@ -27,9 +31,9 @@ export async function createBlogPost(blogPost: BlogPost) {
         excerpt: blogPost.excerpt,
         content: blogPost.content,
         coverImage: blogPost.coverImage,
-        isPublished: blogPost.isPublished || false,
-        isDraft: blogPost.isDraft !== false, // Default to true if not provided
-        publishedAt: blogPost.isPublished ? new Date() : null,
+        isPublished: isPublished,
+        isDraft: isDraft,
+        publishedAt: isPublished ? new Date() : null,
         // Use the author relation with connect instead of direct authorId
         author: {
           connect: {
@@ -42,6 +46,7 @@ export async function createBlogPost(blogPost: BlogPost) {
       },
     });
     revalidatePath("/admin/dashboard/blogs");
+    revalidatePath("/blog");
     return { success: true };
   } catch (error) {
     console.error("Error creating blog post:", error);
@@ -77,7 +82,7 @@ export async function getBlogPostById(id: string) {
 export async function updateBlogPost(id: string, updateData: Partial<BlogPost>) {
   try {
     // If slug is being updated, normalize it
-    let dataToUpdate = {...updateData};
+    let dataToUpdate: any = {...updateData};
     
     if (updateData.slug) {
       const normalizedSlug = normalizeSlug(updateData.slug);
@@ -85,11 +90,25 @@ export async function updateBlogPost(id: string, updateData: Partial<BlogPost>) 
       dataToUpdate.slug = normalizedSlug;
     }
     
+    // Ensure isPublished and isDraft are consistent
+    if ('isPublished' in updateData) {
+      const isPublished = updateData.isPublished || false;
+      dataToUpdate.isPublished = isPublished;
+      dataToUpdate.isDraft = !isPublished;
+      // Update publishedAt when publishing
+      if (isPublished && !dataToUpdate.publishedAt) {
+        dataToUpdate.publishedAt = new Date();
+      } else if (!isPublished) {
+        dataToUpdate.publishedAt = null;
+      }
+    }
+    
     const updatedPost = await prisma.blogPost.update({
       where: { id },
       data: dataToUpdate
     });
     revalidatePath("/admin/dashboard/blogs");
+    revalidatePath("/blog");
     revalidatePath(`/blog/${updatedPost.slug}`);
     return { success: true, data: updatedPost };
   } catch (error) {

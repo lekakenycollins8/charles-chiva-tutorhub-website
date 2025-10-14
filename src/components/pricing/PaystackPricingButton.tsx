@@ -5,8 +5,9 @@ import { PricingPlan } from "@/data/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ChevronDown, ChevronUp, Mail } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Mail, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PaystackPricingButtonProps {
   plan: PricingPlan;
@@ -23,6 +24,15 @@ export default function PaystackPricingButton({
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  
+  // Common countries list
+  const countries = [
+    'Kenya', 'Nigeria', 'Ghana', 'South Africa', 'Tanzania', 'Uganda',
+    'Rwanda', 'Ethiopia', 'Egypt', 'Morocco', 'United States', 'United Kingdom',
+    'Canada', 'Australia', 'Other'
+  ];
 
   // Calculate total price based on quantity
   const totalPrice = plan.priceValue * quantity;
@@ -75,12 +85,16 @@ export default function PaystackPricingButton({
       setEmailError('Please enter a valid email address');
       return;
     }
+    if (!country) {
+      setEmailError('Please select your country');
+      return;
+    }
     setEmailError('');
     setShowEmailDialog(false);
-    initiatePayment(email);
+    initiatePayment(email, country, city);
   };
 
-  const initiatePayment = async (customerEmail: string) => {
+  const initiatePayment = async (customerEmail: string, customerCountry: string, customerCity: string) => {
     setLoading(true);
     try {      
       const response = await fetch('/api/paystack/pricing/initialize', {
@@ -91,7 +105,9 @@ export default function PaystackPricingButton({
         body: JSON.stringify({
           planId: plan.id,
           quantity,
-          email: customerEmail
+          email: customerEmail,
+          country: customerCountry,
+          city: customerCity
         }),
       });
       
@@ -199,8 +215,44 @@ export default function PaystackPricingButton({
                   required
                 />
               </div>
-              {emailError && <p className="text-sm text-red-500">{emailError}</p>}
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="country" className="text-sm font-medium">
+                Country
+              </Label>
+              <Select value={country} onValueChange={setCountry} required>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select your country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="city" className="text-sm font-medium">
+                City (Optional)
+              </Label>
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <Input
+                  id="city"
+                  type="text"
+                  placeholder="e.g., Nairobi, Lagos, etc."
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            
+            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => setShowEmailDialog(false)}>
                 Cancel

@@ -102,14 +102,34 @@ export default function DownloadButton({
         if (downloadResponse.ok) {
           const { fileUrl } = await downloadResponse.json();
           
-          // Create a temporary anchor element to trigger download
-          const a = document.createElement('a');
-          a.href = fileUrl;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          // Extract filename from URL or use a default
+          const urlParts = fileUrl.split('/');
+          const fileName = urlParts[urlParts.length - 1] || 'download.pdf';
+          
+          // Fetch the file and create a blob for proper download
+          try {
+            const fileResponse = await fetch(fileUrl);
+            const blob = await fileResponse.blob();
+            
+            // Create a blob URL and trigger download
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = fileName; // Force download instead of opening
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            setTimeout(() => {
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(blobUrl);
+            }, 100);
+          } catch (fetchError) {
+            console.error('Error fetching file:', fetchError);
+            // Fallback: open in new tab if blob download fails
+            window.open(fileUrl, '_blank', 'noopener,noreferrer');
+          }
         } else {
           const error = await downloadResponse.json();
           console.error('Download error:', error);

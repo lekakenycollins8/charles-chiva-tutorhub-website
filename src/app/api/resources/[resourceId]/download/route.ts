@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getResource } from "@/lib/actions/resource-actions";
+import { getResource, incrementDownloadCount } from "@/lib/actions/resource-actions";
 import { verifyDownloadToken } from "@/lib/auth-utils";
 import { cookies } from 'next/headers';
 
@@ -41,6 +41,9 @@ export async function POST(
         );
       }
     }
+    
+    // Increment download count for both free and paid resources
+    await incrementDownloadCount(resourceId);
     
     return NextResponse.json({ 
       success: true,

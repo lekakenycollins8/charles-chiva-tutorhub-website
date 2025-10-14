@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 export async function POST(request: Request) {
   try {
-    const { resourceId, price, email } = await request.json();
+    const { resourceId, price, email, country, city } = await request.json();
     
     if (!resourceId || !price || !email) {
       return NextResponse.json(
@@ -29,11 +29,23 @@ export async function POST(request: Request) {
       metadata: {
         resourceId,
         token,
+        country: country || 'Not specified',
+        city: city || 'Not specified',
         custom_fields: [
           {
             display_name: "Resource ID",
             variable_name: "resource_id",
             value: resourceId
+          },
+          {
+            display_name: "Country",
+            variable_name: "country",
+            value: country || 'Not specified'
+          },
+          {
+            display_name: "City",
+            variable_name: "city",
+            value: city || 'Not specified'
           }
         ]
       }
