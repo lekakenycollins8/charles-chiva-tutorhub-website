@@ -4,7 +4,7 @@ import { Check, BookOpen, GraduationCap, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import PricingCTA from './PricingCTA';
-import PaystackPricingButton from './PaystackPricingButton';
+import PayPalPricingButton from './PayPalPricingButton';
 
 const icons = {
   BookOpen,
@@ -69,7 +69,7 @@ export default function PricingSection() {
                 </CardContent>
                 
                 <CardFooter className="pt-4 pb-8 px-6">
-                  <PaystackPricingButton 
+                  <PayPalPricingButton 
                     plan={plan}
                   />
                 </CardFooter>
