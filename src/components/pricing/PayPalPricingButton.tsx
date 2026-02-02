@@ -5,9 +5,7 @@ import { PricingPlan } from "@/data/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ChevronDown, ChevronUp, Mail, MapPin } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface PayPalPricingButtonProps {
   plan: PricingPlan;
@@ -18,17 +16,6 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showQuantity, setShowQuantity] = useState(false);
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [country, setCountry] = useState('');
-  const [city, setCity] = useState('');
-
-  const countries = [
-    'Kenya', 'Nigeria', 'Ghana', 'South Africa', 'Tanzania', 'Uganda',
-    'Rwanda', 'Ethiopia', 'Egypt', 'Morocco', 'United States', 'United Kingdom',
-    'Canada', 'Australia', 'Other'
-  ];
 
   const totalPrice = plan.priceValue * quantity;
 
@@ -68,24 +55,7 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
     }
   };
 
-  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
-    if (!country) {
-      setEmailError('Please select your country');
-      return;
-    }
-    setEmailError('');
-    setShowEmailDialog(false);
-    initiatePayment(email, country, city);
-  };
-
-  const initiatePayment = async (customerEmail: string, customerCountry: string, customerCity: string) => {
+  const initiatePayment = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/paypal/orders/create', {
@@ -95,9 +65,6 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
           type: 'plan',
           planId: plan.id,
           quantity,
-          email: customerEmail,
-          country: customerCountry,
-          city: customerCity,
         }),
       });
 
@@ -123,7 +90,7 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
   };
 
   const handlePayment = () => {
-    setShowEmailDialog(true);
+    initiatePayment();
   };
 
   return (
@@ -185,87 +152,6 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
         )}
       </Button>
 
-      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enter your email address</DialogTitle>
-            <DialogDescription>
-              We need your email address to send you payment confirmation and receipt.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEmailSubmit} className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email Address
-              </Label>
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-gray-500" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="country" className="text-sm font-medium">
-                Country
-              </Label>
-              <Select value={country} onValueChange={setCountry} required>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select your country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {countries.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="city" className="text-sm font-medium">
-                City (Optional)
-              </Label>
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-500" />
-                <Input
-                  id="city"
-                  type="text"
-                  placeholder="e.g., Nairobi, Lagos, etc."
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
-            </div>
-
-            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setShowEmailDialog(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  'Continue to Payment'
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
