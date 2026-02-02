@@ -32,7 +32,16 @@ export default function DownloadButton({
     const paymentStatus = searchParams.get('payment');
     const reference = searchParams.get('reference');
     const trxref = searchParams.get('trxref');
+    const payerId = searchParams.get('PayerID');
     
+    // Handle PayPal return (token + PayerID)
+    if (token && payerId) {
+      // Capture the PayPal order and get download token
+      captureAndStoreToken(token);
+      return;
+    }
+    
+    // Handle legacy Paystack success
     if (token && paymentStatus === 'success') {
       // Store the token in localStorage for future use
       localStorage.setItem(`download-token-${resourceId}`, token);
@@ -99,6 +108,7 @@ export default function DownloadButton({
   };
 
   const captureAndStoreToken = async (orderID: string) => {
+    setLoading(true);
     try {
       const captureRes = await fetch('/api/paypal/orders/capture', {
         method: 'POST',
@@ -114,6 +124,14 @@ export default function DownloadButton({
       if (downloadToken) {
         localStorage.setItem(`download-token-${resourceId}`, downloadToken);
         setHasValidToken(true);
+        
+        // Clean up URL params
+        const url = new URL(window.location.href);
+        url.searchParams.delete('token');
+        url.searchParams.delete('PayerID');
+        window.history.replaceState({}, '', url.toString());
+        
+        // Start download
         await performDownload();
       }
     } catch (error) {
