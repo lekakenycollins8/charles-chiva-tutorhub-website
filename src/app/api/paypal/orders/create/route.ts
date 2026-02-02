@@ -16,6 +16,19 @@ type CreatePayload = {
   application_context?: {
     return_url: string;
     cancel_url: string;
+    landing_page?: "BILLING" | "LOGIN";
+    user_action?: "PAY_NOW" | "CONTINUE";
+  };
+  payment_source?: {
+    card?: {
+      experience_context?: {
+        brand_name?: string;
+        locale?: string;
+        landing_page?: "BILLING" | "LOGIN";
+        user_action?: "PAY_NOW" | "CONTINUE";
+        payment_method_preference?: "IMMEDIATE_PAYMENT_REQUIRED";
+      };
+    };
   };
 };
 
@@ -76,6 +89,17 @@ export async function POST(request: Request) {
         application_context: {
           return_url: `${SITE_URL}/pricing/success`,
           cancel_url: `${SITE_URL}/pricing`,
+          landing_page: "BILLING",
+          user_action: "PAY_NOW",
+        },
+        payment_source: {
+          card: {
+            experience_context: {
+              landing_page: "BILLING",
+              user_action: "PAY_NOW",
+              payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+            },
+          },
         },
       };
 
@@ -117,6 +141,17 @@ export async function POST(request: Request) {
         application_context: {
           return_url: `${SITE_URL}/resources/${resourceId}`,
           cancel_url: `${SITE_URL}/resources/${resourceId}`,
+          landing_page: "BILLING",
+          user_action: "PAY_NOW",
+        },
+        payment_source: {
+          card: {
+            experience_context: {
+              landing_page: "BILLING",
+              user_action: "PAY_NOW",
+              payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+            },
+          },
         },
       };
 

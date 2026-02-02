@@ -56,94 +56,124 @@ export default function DownloadButton({
 
   const handleDownload = async () => {
     if (isPaid && !hasValidToken) {
-      // Initiate Paystack checkout for paid resources
+      // Initiate PayPal checkout for paid resources
       setLoading(true);
       try {
-        // Check if user email is available
         const email = userEmail || prompt('Please enter your email address to continue with payment:');
-        
         if (!email) {
           setLoading(false);
           return;
         }
-        
-        const response = await fetch('/api/paystack/initialize', {
+
+        // Create PayPal order for this resource
+        const createRes = await fetch('/api/paypal/orders/create', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            resourceId,
-            price,
-            email
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'resource', resourceId, email }),
         });
-        
-        const { authorization_url } = await response.json();
-        
-        // Redirect to Paystack payment page
-        window.location.href = authorization_url;
+
+        if (!createRes.ok) {
+          throw new Error('Failed to create PayPal order');
+        }
+
+        const { approvalUrl, orderID } = await createRes.json();
+
+        // Redirect to PayPal approval page
+        if (approvalUrl) {
+          window.location.href = approvalUrl;
+          return;
+        }
+
+        // Fallback: direct capture if already approved (unlikely)
+        if (orderID) {
+          await captureAndStoreToken(orderID);
+        }
       } catch (error) {
         console.error('Checkout error:', error);
         setLoading(false);
       }
     } else {
       // Handle download for both free and purchased resources
-      setLoading(true);
-      try {
-        const token = localStorage.getItem(`download-token-${resourceId}`);
-        const downloadUrl = `/api/resources/${resourceId}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
-        
-        const downloadResponse = await fetch(downloadUrl, {
-          method: 'POST',
-          credentials: 'include'
-        });
-        
-        if (downloadResponse.ok) {
-          const { fileUrl } = await downloadResponse.json();
-          
-          // Extract filename from URL or use a default
-          const urlParts = fileUrl.split('/');
-          const fileName = urlParts[urlParts.length - 1] || 'download.pdf';
-          
-          // Fetch the file and create a blob for proper download
-          try {
-            const fileResponse = await fetch(fileUrl);
-            const blob = await fileResponse.blob();
-            
-            // Create a blob URL and trigger download
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = fileName; // Force download instead of opening
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            
-            // Cleanup
-            setTimeout(() => {
-              document.body.removeChild(a);
-              window.URL.revokeObjectURL(blobUrl);
-            }, 100);
-          } catch (fetchError) {
-            console.error('Error fetching file:', fetchError);
-            // Fallback: open in new tab if blob download fails
-            window.open(fileUrl, '_blank', 'noopener,noreferrer');
-          }
-        } else {
-          const error = await downloadResponse.json();
-          console.error('Download error:', error);
-          // If token is invalid, clear it and reload the page
-          if (error.error?.includes('token')) {
-            localStorage.removeItem(`download-token-${resourceId}`);
-            router.refresh();
-          }
-        }
-      } catch (error) {
-        console.error('Download error:', error);
-      } finally {
-        setLoading(false);
+      await performDownload();
+    }
+  };
+
+  const captureAndStoreToken = async (orderID: string) => {
+    try {
+      const captureRes = await fetch('/api/paypal/orders/capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderID }),
+      });
+
+      if (!captureRes.ok) {
+        throw new Error('Failed to capture PayPal order');
       }
+
+      const { downloadToken } = await captureRes.json();
+      if (downloadToken) {
+        localStorage.setItem(`download-token-${resourceId}`, downloadToken);
+        setHasValidToken(true);
+        await performDownload();
+      }
+    } catch (error) {
+      console.error('Capture error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performDownload = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem(`download-token-${resourceId}`);
+      const downloadUrl = `/api/resources/${resourceId}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+      
+      const downloadResponse = await fetch(downloadUrl, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (downloadResponse.ok) {
+        const { fileUrl } = await downloadResponse.json();
+        
+        // Extract filename from URL or use a default
+        const urlParts = fileUrl.split('/');
+        const fileName = urlParts[urlParts.length - 1] || 'download.pdf';
+        
+        // Fetch the file and create a blob for proper download
+        try {
+          const fileResponse = await fetch(fileUrl);
+          const blob = await fileResponse.blob();
+          
+          const blobUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = fileName;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          
+          setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+          }, 100);
+        } catch (fetchError) {
+          console.error('Error fetching file:', fetchError);
+          window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        }
+      } else {
+        const error = await downloadResponse.json();
+        console.error('Download error:', error);
+        if (error.error?.includes('token')) {
+          localStorage.removeItem(`download-token-${resourceId}`);
+          router.refresh();
+        }
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
