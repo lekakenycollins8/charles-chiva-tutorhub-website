@@ -1,0 +1,21 @@
+# PayPal Environment Variables (TO BE REMOVED)
+# PAYPAL_CLIENT_ID=
+# PAYPAL_CLIENT_SECRET=
+# PAYPAL_WEBHOOK_ID=
+# PAYPAL_BASE_URL=
+# PAYPAL_CURRENCY=
+
+# IntaSend Environment Variables (TO BE ADDED)
+INTASEND_SECRET_KEY=your_intasend_secret_key_here
+INTASEND_PUBLISHABLE_KEY=your_intasend_publishable_key_here
+INTASEND_WEBHOOK_SECRET=your_intasend_webhook_secret_here
+INTASEND_BASE_URL=https://api.intasend.com
+INTASEND_CURRENCY=USD
+
+# Existing environment variables (keep these)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+DATABASE_URL=
+JWT_SECRET=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=

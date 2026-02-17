@@ -23,27 +23,31 @@ export default function DownloadButton({
 }: DownloadButtonProps) {
   const [loading, setLoading] = useState(false);
   const [hasValidToken, setHasValidToken] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
     // Check for token in URL on component mount
-    const token = searchParams.get('token');
+    const invoiceId = searchParams.get('invoice_id');
     const paymentStatus = searchParams.get('payment');
     const reference = searchParams.get('reference');
     const trxref = searchParams.get('trxref');
-    const payerId = searchParams.get('PayerID');
     
-    // Handle PayPal return (token + PayerID)
-    if (token && payerId) {
-      // Capture the PayPal order and get download token
-      captureAndStoreToken(token);
+    // Handle IntaSend return (invoice_id)
+    if (invoiceId) {
+      // Verify the IntaSend transaction and get download token
+      verifyAndStoreToken(invoiceId);
       return;
     }
     
     // Handle legacy Paystack success
-    if (token && paymentStatus === 'success') {
+    if (paymentStatus === 'success' && reference) {
       // Store the token in localStorage for future use
+      const token = reference; // Use reference as token for legacy support
       localStorage.setItem(`download-token-${resourceId}`, token);
       setHasValidToken(true);
       
@@ -65,37 +69,43 @@ export default function DownloadButton({
 
   const handleDownload = async () => {
     if (isPaid && !hasValidToken) {
-      // Initiate PayPal checkout for paid resources
+      // Show customer form for paid resources
+      if (!showCustomerForm) {
+        setShowCustomerForm(true);
+        return;
+      }
+      
+      if (!email || !firstName || !lastName) {
+        alert('Please fill in all customer information fields.');
+        return;
+      }
+
+      // Initiate IntaSend checkout for paid resources
       setLoading(true);
       try {
-        const email = userEmail || prompt('Please enter your email address to continue with payment:');
-        if (!email) {
-          setLoading(false);
-          return;
-        }
-
-        // Create PayPal order for this resource
-        const createRes = await fetch('/api/paypal/orders/create', {
+        // Create IntaSend checkout for this resource
+        const createRes = await fetch('/api/intasend/checkout/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'resource', resourceId, email }),
+          body: JSON.stringify({ 
+            type: 'resource', 
+            resourceId, 
+            email,
+            firstName,
+            lastName
+          }),
         });
 
         if (!createRes.ok) {
-          throw new Error('Failed to create PayPal order');
+          throw new Error('Failed to create IntaSend checkout');
         }
 
-        const { approvalUrl, orderID } = await createRes.json();
+        const { checkoutUrl } = await createRes.json();
 
-        // Redirect to PayPal approval page
-        if (approvalUrl) {
-          window.location.href = approvalUrl;
+        // Redirect to IntaSend checkout page
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
           return;
-        }
-
-        // Fallback: direct capture if already approved (unlikely)
-        if (orderID) {
-          await captureAndStoreToken(orderID);
         }
       } catch (error) {
         console.error('Checkout error:', error);
@@ -107,35 +117,34 @@ export default function DownloadButton({
     }
   };
 
-  const captureAndStoreToken = async (orderID: string) => {
+  const verifyAndStoreToken = async (invoiceId: string) => {
     setLoading(true);
     try {
-      const captureRes = await fetch('/api/paypal/orders/capture', {
+      const verifyRes = await fetch('/api/intasend/checkout/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderID }),
+        body: JSON.stringify({ invoiceId }),
       });
 
-      if (!captureRes.ok) {
-        throw new Error('Failed to capture PayPal order');
+      if (!verifyRes.ok) {
+        throw new Error('Failed to verify IntaSend transaction');
       }
 
-      const { downloadToken } = await captureRes.json();
+      const { downloadToken } = await verifyRes.json();
       if (downloadToken) {
         localStorage.setItem(`download-token-${resourceId}`, downloadToken);
         setHasValidToken(true);
         
         // Clean up URL params
         const url = new URL(window.location.href);
-        url.searchParams.delete('token');
-        url.searchParams.delete('PayerID');
+        url.searchParams.delete('invoice_id');
         window.history.replaceState({}, '', url.toString());
         
         // Start download
         await performDownload();
       }
     } catch (error) {
-      console.error('Capture error:', error);
+      console.error('Verification error:', error);
     } finally {
       setLoading(false);
     }
@@ -196,25 +205,64 @@ export default function DownloadButton({
   };
 
   return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      className={`inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${className}`}
-    >
-      {loading ? (
-        <>
-          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Processing...
-        </>
-      ) : (
-        <>
-          <Download className="-ml-1 mr-2 h-4 w-4" />
-          {isPaid && !hasValidToken ? 'Purchase Now' : 'Download'}
-        </>
+    <div className="space-y-4">
+      {showCustomerForm && (
+        <div className="flex flex-col space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium">First Name</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="John"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Last Name</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Doe"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="john@example.com"
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
       )}
-    </button>
+      
+      <button
+        onClick={handleDownload}
+        disabled={loading}
+        className={`inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${className}`}
+      >
+        {loading ? (
+          <>
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing...
+          </>
+        ) : (
+          <>
+            <Download className="-ml-1 mr-2 h-4 w-4" />
+            {isPaid && !hasValidToken ? (showCustomerForm ? 'Purchase Now' : 'Purchase Now') : 'Download'}
+          </>
+        )}
+      </button>
+    </div>
   );
 }

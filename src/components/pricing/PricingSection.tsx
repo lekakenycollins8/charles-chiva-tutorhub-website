@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import PricingCTA from './PricingCTA';
-import PayPalPricingButton from './PayPalPricingButton';
+import IntaSendPricingButton from './IntaSendPricingButton';
 import { motion } from 'framer-motion';
 
 const icons = {
@@ -159,7 +159,7 @@ export default function PricingSection() {
                   </CardContent>
                   
                   <CardFooter className="pt-6 pb-8 px-8">
-                    <PayPalPricingButton 
+                    <IntaSendPricingButton 
                       plan={plan}
                       className={`py-4 text-lg font-semibold transition-all duration-300 ${
                         isPopular 

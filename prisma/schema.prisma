@@ -102,3 +102,20 @@ model Payment {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+// Checkout metadata model for temporary storage of checkout session data
+model CheckoutMetadata {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  checkoutId  String   @unique // IntaSend checkout ID
+  invoiceId   String   // IntaSend invoice ID (from webhook)
+  metadata    Json     // Original checkout metadata (type, resourceId, etc.)
+  email       String   // Customer email
+  amount      Float    // Payment amount
+  currency    String   // Payment currency
+  status      String   @default("PENDING") // PENDING, COMPLETED, EXPIRED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Auto-cleanup index for expired records
+  @@index([updatedAt])
+}

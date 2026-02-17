@@ -7,15 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
-interface PayPalPricingButtonProps {
+interface IntaSendPricingButtonProps {
   plan: PricingPlan;
   className?: string;
 }
 
-export default function PayPalPricingButton({ plan, className }: PayPalPricingButtonProps) {
+export default function IntaSendPricingButton({ plan, className }: IntaSendPricingButtonProps) {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showQuantity, setShowQuantity] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   const totalPrice = plan.priceValue * quantity;
 
@@ -56,30 +60,35 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
   };
 
   const initiatePayment = async () => {
+    if (!email || !firstName || !lastName) {
+      alert('Please fill in all customer information fields.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch('/api/paypal/orders/create', {
+      const response = await fetch('/api/intasend/checkout/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'plan',
           planId: plan.id,
           quantity,
+          email,
+          firstName,
+          lastName,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create PayPal order');
+        throw new Error('Failed to create IntaSend checkout');
       }
 
-      const { approvalUrl, orderID } = await response.json();
-      if (approvalUrl) {
-        window.location.href = approvalUrl;
-      } else if (orderID) {
-        // If no approvalUrl returned (unlikely), fallback to success page with orderID
-        window.location.href = `/pricing/success?token=${orderID}`;
+      const { checkoutUrl, id } = await response.json();
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
       } else {
-        throw new Error('Invalid PayPal response');
+        throw new Error('Invalid IntaSend response');
       }
     } catch (error) {
       console.error('Payment initialization error:', error);
@@ -90,7 +99,11 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
   };
 
   const handlePayment = () => {
-    initiatePayment();
+    if (!showCustomerForm) {
+      setShowCustomerForm(true);
+    } else {
+      initiatePayment();
+    }
   };
 
   return (
@@ -137,6 +150,52 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
         </div>
       )}
 
+      {showCustomerForm && (
+        <div className="flex flex-col space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor={`firstName-${plan.id}`} className="text-sm font-medium">
+                First Name
+              </Label>
+              <Input
+                id={`firstName-${plan.id}`}
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="John"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor={`lastName-${plan.id}`} className="text-sm font-medium">
+                Last Name
+              </Label>
+              <Input
+                id={`lastName-${plan.id}`}
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Doe"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor={`email-${plan.id}`} className="text-sm font-medium">
+              Email Address
+            </Label>
+            <Input
+              id={`email-${plan.id}`}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="john@example.com"
+              className="mt-1"
+            />
+          </div>
+        </div>
+      )}
+
       <Button
         onClick={showQuantity ? handlePayment : () => setShowQuantity(true)}
         disabled={loading}
@@ -148,10 +207,9 @@ export default function PayPalPricingButton({ plan, className }: PayPalPricingBu
             Processing...
           </>
         ) : (
-          showQuantity ? `Pay $${totalPrice.toFixed(2)}` : "Get Started"
+          showCustomerForm ? `Pay $${totalPrice.toFixed(2)}` : showQuantity ? "Continue" : "Get Started"
         )}
       </Button>
-
     </div>
   );
 }
