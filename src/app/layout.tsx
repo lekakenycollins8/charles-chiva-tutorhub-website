@@ -13,6 +13,9 @@ import Footer from "@/components/layout/Footer";
 // Import AdminLayoutWrapper
 import AdminLayoutWrapper from "@/components/admin/AdminLayoutWrapper";
 
+// Import SEO components
+import OrganizationSchema from "@/components/seo/OrganizationSchema";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -43,6 +46,8 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+        {/* Organization Schema */}
+        <OrganizationSchema />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}

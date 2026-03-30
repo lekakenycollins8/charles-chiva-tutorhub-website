@@ -183,8 +183,37 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     return readingTime < 1 ? 1 : readingTime;
   };
 
+  // Article Schema for SEO
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "description": post.excerpt || post.content.replace(/<[^>]*>/g, '').substring(0, 160),
+    "image": post.coverImage || "https://chivatutorhub.com/logo.png",
+    "datePublished": post.createdAt ? new Date(post.createdAt).toISOString() : undefined,
+    "dateModified": post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+    "author": {
+      "@type": "Organization",
+      "name": "Chiva TutorHub"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Chiva TutorHub",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://chivatutorhub.com/logo.png"
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      {/* Article Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
