@@ -2,7 +2,13 @@
 
 import { usePathname } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
-import SessionProviderWrapper from '../auth/SessionProviderWrapper';
+import dynamic from 'next/dynamic';
+
+// Dynamically import SessionProviderWrapper with ssr: false to prevent localStorage errors
+const SessionProviderWrapper = dynamic(
+  () => import('../auth/SessionProviderWrapper'),
+  { ssr: false }
+);
 
 export default function AdminLayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();

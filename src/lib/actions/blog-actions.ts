@@ -56,10 +56,35 @@ export async function createBlogPost(blogPost: BlogPost) {
 
 export async function getBlogPosts(filters: any = {}) {
   try {
-    const posts = await prisma.blogPost.findMany({
-      where: filters,
+    const { page, limit, ...whereFilters } = filters;
+    
+    const query: any = {
+      where: whereFilters,
       orderBy: { createdAt: 'desc' }
-    });
+    };
+    
+    if (page && limit) {
+      const skip = (page - 1) * limit;
+      query.skip = skip;
+      query.take = limit;
+    }
+    
+    const posts = await prisma.blogPost.findMany(query);
+    
+    if (page && limit) {
+      const total = await prisma.blogPost.count({ where: whereFilters });
+      return { 
+        success: true, 
+        data: posts,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      };
+    }
+    
     return { success: true, data: posts };
   } catch (error) {
     console.error("Error fetching blog posts:", error);

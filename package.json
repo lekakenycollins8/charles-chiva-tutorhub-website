@@ -35,7 +35,6 @@
     "@types/uuid": "^10.0.0",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
-    "better-auth": "^1.2.10",
     "bson": "^6.10.4",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.7.0",
@@ -62,7 +61,6 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
-    "@better-auth/cli": "^1.2.10",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^5.0.2",

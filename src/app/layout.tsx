@@ -1,3 +1,6 @@
+// Polyfill localStorage for Node.js v25+ (must be first import)
+import '@/polyfills/localStorage';
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -6,9 +9,6 @@ import "./globals.css";
 // Import layout components
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-
-// Import SessionProvider wrapper (client component)
-import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper";
 
 // Import AdminLayoutWrapper
 import AdminLayoutWrapper from "@/components/admin/AdminLayoutWrapper";
@@ -39,7 +39,7 @@ export default function RootLayout({
         {/* Google AdSense */}
         <Script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8987882511191822"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6972053895242408"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />

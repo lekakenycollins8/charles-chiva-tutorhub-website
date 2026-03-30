@@ -108,6 +108,29 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Legal */}
+          <div className="col-span-1 md:col-span-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-5">Legal</h3>
+            <ul className="space-y-3">
+              {[
+                { name: 'Privacy Policy', href: '/privacy' },
+                { name: 'Terms of Service', href: '/terms' }
+              ].map((link) => (
+                <li key={link.name}>
+                  <Link 
+                    href={link.href} 
+                    className="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center group"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-400 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {/* Contact Info */}
           <div className="col-span-1 md:col-span-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-5">Get In Touch</h3>

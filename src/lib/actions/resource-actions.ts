@@ -44,6 +44,7 @@ interface ResourceFilters {
   searchQuery?: string;
   page?: number;
   limit?: number;
+  includeCounts?: boolean;
 }
 
 // Function to fetch all resources with pagination and filtering
@@ -97,6 +98,20 @@ export async function getResources(filters: ResourceFilters = {}) {
       take: limit
     });
     
+    // Optionally include counts for free/paid resources
+    let counts;
+    if (filters.includeCounts) {
+      const [freeCount, paidCount] = await Promise.all([
+        prisma.resource.count({ where: { isPaid: false } }),
+        prisma.resource.count({ where: { isPaid: true } })
+      ]);
+      counts = {
+        all: freeCount + paidCount,
+        free: freeCount,
+        paid: paidCount
+      };
+    }
+    
     return { 
       success: true, 
       data: resources,
@@ -106,6 +121,7 @@ export async function getResources(filters: ResourceFilters = {}) {
         limit,
         totalPages: Math.ceil(total / limit)
       },
+      counts,
       error: null 
     };
   } catch (error) {

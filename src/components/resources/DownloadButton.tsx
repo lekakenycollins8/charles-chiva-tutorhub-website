@@ -31,6 +31,9 @@ export default function DownloadButton({
   const router = useRouter();
 
   useEffect(() => {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     // Check for token in URL on component mount
     const invoiceId = searchParams.get('invoice_id');
     const paymentStatus = searchParams.get('payment');
@@ -48,7 +51,9 @@ export default function DownloadButton({
     if (paymentStatus === 'success' && reference) {
       // Store the token in localStorage for future use
       const token = reference; // Use reference as token for legacy support
-      localStorage.setItem(`download-token-${resourceId}`, token);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(`download-token-${resourceId}`, token);
+      }
       setHasValidToken(true);
       
       // Clean up the URL but ensure the page is fully loaded first
@@ -62,7 +67,7 @@ export default function DownloadButton({
         // Force a refresh to ensure the component re-renders properly
         router.refresh();
       }, 500);
-    } else if (localStorage.getItem(`download-token-${resourceId}`)) {
+    } else if (typeof window !== 'undefined' && window.localStorage && localStorage.getItem(`download-token-${resourceId}`)) {
       setHasValidToken(true);
     }
   }, [resourceId, searchParams, router]);
@@ -132,7 +137,9 @@ export default function DownloadButton({
 
       const { downloadToken } = await verifyRes.json();
       if (downloadToken) {
-        localStorage.setItem(`download-token-${resourceId}`, downloadToken);
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem(`download-token-${resourceId}`, downloadToken);
+        }
         setHasValidToken(true);
         
         // Clean up URL params
@@ -153,7 +160,9 @@ export default function DownloadButton({
   const performDownload = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem(`download-token-${resourceId}`);
+      const token = (typeof window !== 'undefined' && window.localStorage) 
+        ? localStorage.getItem(`download-token-${resourceId}`) 
+        : null;
       const downloadUrl = `/api/resources/${resourceId}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
       
       const downloadResponse = await fetch(downloadUrl, {
@@ -192,7 +201,7 @@ export default function DownloadButton({
       } else {
         const error = await downloadResponse.json();
         console.error('Download error:', error);
-        if (error.error?.includes('token')) {
+        if (error.error?.includes('token') && typeof window !== 'undefined' && window.localStorage) {
           localStorage.removeItem(`download-token-${resourceId}`);
           router.refresh();
         }

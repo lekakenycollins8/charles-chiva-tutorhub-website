@@ -8,7 +8,8 @@ declare global {
 
 // Configure Prisma client with MongoDB-specific settings
 export const prisma = global.prisma || new PrismaClient({
-  log: ['query'],
+  // Query logging removed to prevent debug package from accessing localStorage during SSR
+  // If needed, enable with: log: process.env.PRISMA_DEBUG === 'true' ? ['query'] : []
   datasources: {
     db: {
       url: process.env.DATABASE_URL

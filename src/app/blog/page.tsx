@@ -1,6 +1,3 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { getBlogPosts } from '@/lib/actions/blog-actions';
 import { BlogPost } from '@/types/blog';
 import Link from 'next/link';
@@ -9,97 +6,90 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Tag, FolderOpen, Calendar, Clock, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Calendar, Clock, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const POSTS_PER_PAGE = 9;
 
-export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+// Format date helper
+const formatDate = (dateString: string | Date) => {
+  const date = dateString instanceof Date ? dateString : new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+};
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        // Use isPublished: true as per the Prisma schema
-        const { success, data } = await getBlogPosts({ isPublished: true });
-        if (success && data) {
-          // Transform each post to match BlogPost interface
-          const transformedData = data.map((post: any) => ({
-            id: post.id,
-            title: post.title,
-            slug: post.slug,
-            excerpt: post.excerpt || '',
-            content: post.content,
-            coverImage: post.coverImage || undefined,
-            isPublished: post.isPublished,
-            isDraft: post.isDraft,
-            authorId: post.author,
-            categories: post.categories || [],
-            tags: post.tags || [],
-            relatedPosts: post.relatedPosts || [],
-            createdAt: post.createdAt,
-            updatedAt: post.updatedAt
-          }));
-          setPosts(transformedData.filter(post => post.isPublished));
-        }
-      } catch (error) {
-        console.error("Error fetching blog posts:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPosts();
-  }, []);
+// Calculate reading time helper
+const calculateReadingTime = (content: string) => {
+  const wordsPerMinute = 200;
+  const wordCount = content.split(/\s+/).length;
+  const readingTime = Math.ceil(wordCount / wordsPerMinute);
+  return readingTime < 1 ? 1 : readingTime;
+};
 
-  if (loading) {
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const currentPage = Number(params.page) || 1;
+
+  // Fetch paginated blog posts server-side
+  const { success, data, pagination, error } = await getBlogPosts({ 
+    isPublished: true,
+    page: currentPage,
+    limit: POSTS_PER_PAGE
+  });
+
+  // Handle error state
+  if (!success || error) {
     return (
-      <div className="container mx-auto py-16 flex justify-center">
-        <Loader2 className="animate-spin h-8 w-8" />
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-900 opacity-90"></div>
+          <div className="container mx-auto px-4 py-28 md:py-36 relative z-10">
+            <div className="max-w-3xl mx-auto text-center text-white">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
+                Insights & Resources
+              </h1>
+              <p className="text-xl md:text-2xl opacity-90 leading-relaxed">
+                Explore our collection of articles, guides, and resources to enhance your learning journey
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center py-16 bg-red-50 rounded-xl border border-red-200">
+            <p className="text-xl text-red-600 mb-4">Unable to load blog posts</p>
+            <p className="text-gray-600">{error || 'An error occurred while fetching posts. Please try again later.'}</p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Extract all unique categories from posts
-  const allCategories = Array.from(new Set(
-    posts.flatMap(post => post.categories || [])
-  ));
-  
-  // Use all posts without filtering
-  const filteredPosts = posts;
-  
-  // Calculate pagination
-  const totalPosts = filteredPosts.length;
-  const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
-  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
-  const endIndex = startIndex + POSTS_PER_PAGE;
-  const paginatedPosts = filteredPosts.slice(startIndex, endIndex);
-  
-  // Handle page change
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-  
-  // Format date in a more readable way
-  const formatDate = (dateString: string | Date) => {
-    const date = dateString instanceof Date ? dateString : new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-  
-  // Calculate reading time (rough estimate)
-  const calculateReadingTime = (content: string) => {
-    const wordsPerMinute = 200;
-    const wordCount = content.split(/\s+/).length;
-    const readingTime = Math.ceil(wordCount / wordsPerMinute);
-    return readingTime < 1 ? 1 : readingTime;
-  };
+  // Transform posts
+  const posts: BlogPost[] = data ? data.map((post: any) => ({
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || '',
+    content: post.content,
+    coverImage: post.coverImage || undefined,
+    isPublished: post.isPublished,
+    isDraft: post.isDraft,
+    authorId: post.authorId,
+    categories: post.categories || [],
+    tags: post.tags || [],
+    relatedPosts: post.relatedPosts || [],
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt
+  })) : [];
+
+  const totalPages = pagination?.totalPages || 1;
+  const totalPosts = pagination?.total || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -141,7 +131,7 @@ export default function BlogPage() {
       </div>
       
       <div className="container mx-auto px-4 py-16">
-        {filteredPosts.length === 0 ? (
+        {posts.length === 0 ? (
           <div className="text-center py-16 bg-gray-50 rounded-xl">
             <p className="text-xl text-gray-600 mb-4">No blog posts found.</p>
             {false ? (
@@ -155,7 +145,7 @@ export default function BlogPage() {
         ) : (
           <>
             {/* Featured Post (first post) */}
-            {paginatedPosts.length > 0 && currentPage === 1 && (
+            {posts.length > 0 && currentPage === 1 && (
               <div className="mb-16">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
                   <span className="bg-blue-600 w-1 h-8 inline-block mr-3"></span>
@@ -164,42 +154,42 @@ export default function BlogPage() {
                 <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <div className="md:flex">
                     <div className="md:w-1/2">
-                      {paginatedPosts[0].coverImage ? (
+                      {posts[0].coverImage ? (
                         <div className="relative h-64 md:h-full">
                           <Image 
-                            src={paginatedPosts[0].coverImage} 
-                            alt={paginatedPosts[0].title}
+                            src={posts[0].coverImage} 
+                            alt={posts[0].title}
                             fill
                             className="object-cover"
                           />
                         </div>
                       ) : (
                         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 h-64 md:h-full flex items-center justify-center">
-                          <h3 className="text-3xl font-bold text-white px-6 text-center">{paginatedPosts[0].title}</h3>
+                          <h3 className="text-3xl font-bold text-white px-6 text-center">{posts[0].title}</h3>
                         </div>
                       )}
                     </div>
                     <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-between">
                       <div>
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {paginatedPosts[0].categories?.map((category, index) => (
+                          {posts[0].categories?.map((category, index) => (
                             <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                               {category}
                             </Badge>
                           ))}
                         </div>
-                        <h3 className="text-2xl font-bold mb-4 text-gray-800">{paginatedPosts[0].title}</h3>
-                        <p className="text-gray-600 mb-6 line-clamp-3">{paginatedPosts[0].excerpt}</p>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-800">{posts[0].title}</h3>
+                        <p className="text-gray-600 mb-6 line-clamp-3">{posts[0].excerpt}</p>
                       </div>
                       <div>
                         <div className="flex items-center text-sm text-gray-500 mb-4">
                           <Calendar className="h-4 w-4 mr-2" />
-                          <span>{formatDate(paginatedPosts[0].createdAt)}</span>
+                          <span>{formatDate(posts[0].createdAt)}</span>
                           <span className="mx-2">•</span>
                           <Clock className="h-4 w-4 mr-2" />
-                          <span>{calculateReadingTime(paginatedPosts[0].content)} min read</span>
+                          <span>{calculateReadingTime(posts[0].content)} min read</span>
                         </div>
-                        <Link href={`/blog/${paginatedPosts[0].slug}`}>
+                        <Link href={`/blog/${posts[0].slug}`}>
                           <Button className="w-full md:w-auto">
                             Read Article <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
@@ -218,7 +208,7 @@ export default function BlogPage() {
                 Latest Articles
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {(currentPage === 1 ? paginatedPosts.slice(1) : paginatedPosts).map((post) => (
+                {(currentPage === 1 ? posts.slice(1) : posts).map((post) => (
                   <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                     {post.coverImage && (
                       <div className="relative w-full h-48 overflow-hidden">
@@ -269,24 +259,26 @@ export default function BlogPage() {
                     Page {currentPage} of {totalPages} • {totalPosts} total posts
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="ml-2">Previous</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      <span className="mr-2">Next</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    <Link href={currentPage > 1 ? `/blog?page=${currentPage - 1}` : '#'}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="ml-2">Previous</span>
+                      </Button>
+                    </Link>
+                    <Link href={currentPage < totalPages ? `/blog?page=${currentPage + 1}` : '#'}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === totalPages}
+                      >
+                        <span className="mr-2">Next</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
                 </CardFooter>
               </Card>
