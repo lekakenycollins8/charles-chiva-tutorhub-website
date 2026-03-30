@@ -9,7 +9,66 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Tag, FolderOpen, Link2, Calendar, Clock } from 'lucide-react';
 import ScrollToTopButton from '@/components/blog/ScrollToTopButton';
 import SocialShareButtons from '@/components/blog/SocialShareButtons';
+import { Metadata } from 'next';
 import '@/styles/tiptap.css';
+
+// Generate dynamic metadata for blog posts
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const normalizedSlug = decodeURIComponent(slug).replace(/ /g, '-');
+  
+  const { success, data } = await getBlogPostBySlug(normalizedSlug);
+  
+  if (!success || !data) {
+    return {
+      title: 'Post Not Found | Chiva TutorHub',
+      description: 'The blog post you are looking for could not be found.',
+    };
+  }
+
+  const post = data as BlogPost;
+  const baseUrl = 'https://chivatutorhub.com';
+  const postUrl = `${baseUrl}/blog/${post.slug}`;
+  
+  // Extract plain text from HTML content for description
+  const plainTextExcerpt = post.excerpt || 
+    post.content.replace(/<[^>]*>/g, '').substring(0, 160) + '...';
+
+  return {
+    title: `${post.title} | Chiva TutorHub Blog`,
+    description: plainTextExcerpt,
+    keywords: post.tags?.join(', '),
+    authors: [{ name: 'Chiva TutorHub' }],
+    openGraph: {
+      title: post.title,
+      description: plainTextExcerpt,
+      url: postUrl,
+      siteName: 'Chiva TutorHub',
+      images: post.coverImage ? [
+        {
+          url: post.coverImage,
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        }
+      ] : [],
+      locale: 'en_US',
+      type: 'article',
+      publishedTime: post.createdAt ? new Date(post.createdAt).toISOString() : undefined,
+      modifiedTime: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+      tags: post.tags,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: plainTextExcerpt,
+      images: post.coverImage ? [post.coverImage] : [],
+    },
+    alternates: {
+      canonical: postUrl,
+    },
+  };
+}
 
 // Related Post Card Component
 async function RelatedPostCard({ postId }: { postId: string }) {

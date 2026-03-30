@@ -6,6 +6,47 @@ import { ArrowLeft, Download, FileText } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DownloadButton from "@/components/resources/DownloadButton";
+import { Metadata } from "next";
+
+// Generate dynamic metadata for resource pages
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const { success, resource } = await getResource(id);
+  
+  if (!success || !resource) {
+    return {
+      title: 'Resource Not Found | Chiva TutorHub',
+      description: 'The resource you are looking for could not be found.',
+    };
+  }
+
+  const baseUrl = 'https://chivatutorhub.com';
+  const resourceUrl = `${baseUrl}/resources/${resource.id}`;
+  const priceTag = resource.isPaid ? `$${resource.price}` : 'Free';
+  const description = `${resource.description} - ${priceTag} ${resource.fileType.toUpperCase()} resource for ${resource.category}.`;
+
+  return {
+    title: `${resource.title} | Chiva TutorHub Resources`,
+    description: description.substring(0, 160),
+    keywords: [resource.category, resource.fileType, priceTag, 'educational resource', 'study material'].join(', '),
+    openGraph: {
+      title: resource.title,
+      description: description.substring(0, 160),
+      url: resourceUrl,
+      siteName: 'Chiva TutorHub',
+      type: 'website',
+      locale: 'en_US',
+    },
+    twitter: {
+      card: 'summary',
+      title: resource.title,
+      description: description.substring(0, 160),
+    },
+    alternates: {
+      canonical: resourceUrl,
+    },
+  };
+}
 
 export default async function ResourcePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
