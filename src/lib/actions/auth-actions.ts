@@ -1,14 +1,9 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { getSession, isAdmin, hashPassword } from "../auth";
-import { ObjectId } from "mongodb";
-import { signIn, signOut } from "next-auth/react";
 import { authOptions } from "../auth";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/db";
 
 type LoginData = {
   email: string;
@@ -38,26 +33,22 @@ export async function signupAdmin(data: SignupData) {
       };
     }
 
-    // Generate a proper MongoDB ObjectId
-    const objectId = new ObjectId().toString();
-    
     // Hash the password
     const hashedPassword = await hashPassword(data.password);
     
     // Create the user in our database with hashed password
     const newUser = await prisma.user.create({
       data: {
-        id: objectId,
         name: data.name,
         email: data.email,
         password: hashedPassword,
         role: "admin",
-        emailVerified: true, // Auto-verify for admin signup
+        emailVerified: new Date(), // Auto-verify for admin signup — sets verification timestamp
       },
     });
     
     console.log("Admin user created successfully:", {
-      userId: objectId,
+      userId: newUser.id,
       email: data.email,
     });
 

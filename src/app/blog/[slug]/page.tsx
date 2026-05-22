@@ -160,7 +160,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     authorId: data.authorId,
     categories: data.categories || [],
     tags: data.tags || [],
-    relatedPosts: data.relatedPosts || [],
     createdAt: data.createdAt,
     updatedAt: data.updatedAt
   };

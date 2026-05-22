@@ -41,8 +41,7 @@ export async function createBlogPost(blogPost: BlogPost) {
           }
         },
         categories: blogPost.categories || [],
-        tags: blogPost.tags || [],
-        relatedPosts: blogPost.relatedPosts || []
+        tags: blogPost.tags || []
       },
     });
     revalidatePath("/admin/dashboard/blogs");

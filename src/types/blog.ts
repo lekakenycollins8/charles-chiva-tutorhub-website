@@ -11,7 +11,7 @@ export interface BlogPost {
   authorId: string;
   categories: string[];
   tags: string[];
-  relatedPosts: string[];
+  relatedPosts?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

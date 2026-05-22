@@ -2,22 +2,22 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL")
-  relationMode = "prisma"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // Next-Auth User model
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
-  emailVerified Boolean   @default(false)
+  emailVerified DateTime?
   image         String?
   password      String?
   role          String    @default("admin") // Only admin role for this application
@@ -28,7 +28,7 @@ model User {
 
 // Resource model for study materials
 model Resource {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(cuid())
   title         String
   description   String
   fileUrl       String
@@ -44,7 +44,7 @@ model Resource {
 
 // Video model for tutorial videos
 model Video {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(cuid())
   title         String
   description   String
   videoUrl      String
@@ -58,12 +58,12 @@ model Video {
 
 // Contact form submission model
 model ContactSubmission {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  id            String   @id @default(cuid())
   name          String
   email         String
   phone         String?
   subject       String
-  message       String   @db.String
+  message       String
   source        String?  // "homepage" or "contact_page"
   status        String   @default("NEW") // NEW, IN_PROGRESS, RESOLVED
   createdAt     DateTime @default(now())
@@ -72,7 +72,7 @@ model ContactSubmission {
 
 // Blog Post Model
 model BlogPost {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  id          String    @id @default(cuid())
   title       String
   slug        String    @unique
   excerpt     String
@@ -81,23 +81,34 @@ model BlogPost {
   isPublished Boolean   @default(false)
   isDraft     Boolean   @default(true)
   publishedAt DateTime?
-  authorId    String    @db.ObjectId
+  authorId    String
   author      User      @relation(fields: [authorId], references: [id])
   categories  String[]
   tags        String[]
-  relatedPosts String[] @db.ObjectId
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  relatedTo   BlogPostRelation[] @relation("PostRelations")
+  relatedFrom BlogPostRelation[] @relation("RelatedPosts")
+}
+
+// Join table replacing the former relatedPosts String[] @db.ObjectId array
+model BlogPostRelation {
+  postId    String
+  relatedId String
+  post      BlogPost @relation("PostRelations", fields: [postId],    references: [id], onDelete: Cascade)
+  related   BlogPost @relation("RelatedPosts",  fields: [relatedId], references: [id], onDelete: Cascade)
+
+  @@id([postId, relatedId])
 }
 
 // Payment model for tracking both resource and pricing plan payments
 model Payment {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  reference     String    @unique  // Paystack reference
+  id            String    @id @default(cuid())
+  reference     String    @unique  // IntaSend invoice reference
   email         String    // Customer email
   amount        Float     // Amount paid in main currency (dollars)
   status        String    // Payment status (completed, failed, etc.)
-  resourceId    String?   @db.ObjectId // Optional reference to a resource if it's a resource payment
+  resourceId    String?   // Optional reference to a resource if it's a resource payment
   metadata      Json?     // Additional payment metadata (plan details, etc.)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -105,7 +116,7 @@ model Payment {
 
 // Checkout metadata model for temporary storage of checkout session data
 model CheckoutMetadata {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(cuid())
   checkoutId  String   @unique // IntaSend checkout ID
   invoiceId   String   // IntaSend invoice ID (from webhook)
   metadata    Json     // Original checkout metadata (type, resourceId, etc.)
@@ -115,7 +126,7 @@ model CheckoutMetadata {
   status      String   @default("PENDING") // PENDING, COMPLETED, EXPIRED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // Auto-cleanup index for expired records
   @@index([updatedAt])
 }

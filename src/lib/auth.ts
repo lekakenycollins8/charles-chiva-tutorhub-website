@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare, hash } from "bcrypt";
 import type { DefaultSession, Session } from "next-auth";
@@ -6,9 +6,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { getServerSession } from "next-auth/next";
 import NextAuth from "next-auth";
 import type { JWT } from "next-auth/jwt";
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 /**
  * NextAuth configuration options
@@ -70,8 +67,8 @@ export const authOptions = {
           name: user.name || "",
           email: user.email,
           role: user.role,
-          // Convert to boolean for NextAuth v5 compatibility
-          emailVerified: user.emailVerified === true
+          // emailVerified is DateTime? — truthy means verified, null means not verified
+          emailVerified: !!user.emailVerified
         };
       }
     })
