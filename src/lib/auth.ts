@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { compare, hash } from "bcrypt";
 import type { DefaultSession, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";

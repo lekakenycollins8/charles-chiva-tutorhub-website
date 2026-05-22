@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       console.log("🎉 Checkout created successfully");
       
       // Store metadata for webhook processing
-      storeCheckoutMetadata(response.id, metadata, email || "", total, CURRENCY);
+      await storeCheckoutMetadata(response.id, metadata, email || "", total, CURRENCY);
       
       return NextResponse.json({ 
         transactionId: response.id,
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
       console.log("🎉 Checkout created successfully");
       
       // Store metadata for webhook processing
-      storeCheckoutMetadata(response.id, metadata, email || "", resource.price, CURRENCY);
+      await storeCheckoutMetadata(response.id, metadata, email || "", resource.price, CURRENCY);
       
       return NextResponse.json({ 
         transactionId: response.id,

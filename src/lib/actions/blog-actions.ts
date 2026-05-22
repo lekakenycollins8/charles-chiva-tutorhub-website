@@ -207,12 +207,6 @@ export async function getBlogPostBySlug(slug: string) {
       return { success: true, data: similarPosts[0] };
     }
     
-    // Last attempt: get all posts and log them for debugging
-    const allPosts = await prisma.blogPost.findMany({
-      select: { id: true, title: true, slug: true }
-    });
-    
-    console.log('No blog post found. Available posts:', JSON.stringify(allPosts));
     return { success: false, error: "Blog post not found" };
   } catch (error) {
     console.error("Error fetching blog post by slug:", error);

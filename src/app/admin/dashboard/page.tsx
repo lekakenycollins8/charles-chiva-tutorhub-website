@@ -1,12 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { FileText, BookOpen, MessageSquare, Video } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 export default async function AdminDashboard() {
   // Check authentication using NextAuth
