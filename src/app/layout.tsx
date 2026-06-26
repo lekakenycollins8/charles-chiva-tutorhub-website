@@ -29,6 +29,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Chiva TutorHub - Professional Tutoring Services",
   description: "Professional tutoring services for Chemistry, Mathematics, Business Studies, and Accounting.",
+  other: {
+    "trustpilot-one-time-domain-verification-id":
+      "e4d5157b-6d3f-4a36-b87f-aba1b53ed16f",
+  },
 };
 
 export default function RootLayout({
