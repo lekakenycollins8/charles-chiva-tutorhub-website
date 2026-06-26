@@ -50,7 +50,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
-        {/* Organization of Schema */}
+        {/* Organization Schema */}
         <OrganizationSchema />
       </head>
       <body
