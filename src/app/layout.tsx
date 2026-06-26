@@ -10,7 +10,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
-// Import AdminLayoutWrapper
+// Import the AdminLayoutWrapper
 import AdminLayoutWrapper from "@/components/admin/AdminLayoutWrapper";
 
 // Import all SEO components
@@ -50,7 +50,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
-        {/* Organization Schema */}
+        {/* Organization of Schema */}
         <OrganizationSchema />
       </head>
       <body
