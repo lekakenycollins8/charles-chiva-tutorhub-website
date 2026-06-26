@@ -13,7 +13,7 @@ import Footer from "@/components/layout/Footer";
 // Import AdminLayoutWrapper
 import AdminLayoutWrapper from "@/components/admin/AdminLayoutWrapper";
 
-// Import SEO components
+// Import all SEO components
 import OrganizationSchema from "@/components/seo/OrganizationSchema";
 
 const geistSans = Geist({
