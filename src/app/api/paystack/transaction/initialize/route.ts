@@ -158,6 +158,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unsupported payment type" }, { status: 400 });
   } catch (error: any) {
     console.error("Paystack initialize transaction error:", error?.response?.data || error);
-    return NextResponse.json({ error: "Failed to initialize transaction" }, { status: 500 });
+    
+    // Return detailed error for debugging
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to initialize transaction";
+    const statusCode = error?.response?.status || 500;
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      details: error?.response?.data || error?.message 
+    }, { status: statusCode });
   }
 }
