@@ -30,8 +30,21 @@ export async function POST(request: NextRequest) {
       maxSize = 100 * 1024 * 1024; // 100MB for videos
       uploadFolder = "tutorhub-videos";
     } else if (fileType === "document") {
-      // Document formats
-      validTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+      // Document formats - comprehensive list
+      validTypes = [
+        "application/pdf",
+        "application/msword", // .doc
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+        "application/vnd.ms-powerpoint", // .ppt
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
+        "application/vnd.ms-excel", // .xls
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+        "application/vnd.oasis.opendocument.text", // .odt
+        "application/vnd.oasis.opendocument.spreadsheet", // .ods
+        "application/vnd.oasis.opendocument.presentation", // .odp
+        "text/plain", // .txt
+        "application/rtf" // .rtf
+      ];
       maxSize = 10 * 1024 * 1024; // 10MB for documents
       uploadFolder = "tutorhub-documents";
     } else {
@@ -77,6 +90,8 @@ export async function POST(request: NextRequest) {
           folder: uploadFolder,
           public_id: uniqueId,
           resource_type: fileType === "video" ? "video" : fileType === "document" ? "raw" : "image",
+          // For documents, ensure proper format preservation
+          format: file.name.split('.').pop(),
         },
         (error, result) => {
           if (error) {

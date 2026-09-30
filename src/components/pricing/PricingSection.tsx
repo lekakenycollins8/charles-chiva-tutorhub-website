@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import PricingCTA from './PricingCTA';
-import IntaSendPricingButton from './IntaSendPricingButton';
+import PaystackPricingButton from './PaystackPricingButton';
 import { motion } from 'framer-motion';
 
 const icons = {
@@ -135,7 +135,7 @@ export default function PricingSection() {
                     
                     <div className="flex items-baseline justify-center gap-1 mb-4">
                       <span className="text-5xl font-extrabold bg-gradient-to-r from-gray-900 to-blue-600 bg-clip-text text-transparent">
-                        ${plan.priceValue}
+                        {plan.currencySymbol} {plan.priceValue.toLocaleString()}
                       </span>
                       <span className="text-xl text-gray-500">/{plan.priceUnit}</span>
                     </div>
@@ -159,7 +159,7 @@ export default function PricingSection() {
                   </CardContent>
                   
                   <CardFooter className="pt-6 pb-8 px-8">
-                    <IntaSendPricingButton 
+                    <PaystackPricingButton 
                       plan={plan}
                       className={`py-4 text-lg font-semibold transition-all duration-300 ${
                         isPopular 

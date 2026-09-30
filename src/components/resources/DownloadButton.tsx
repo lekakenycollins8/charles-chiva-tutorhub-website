@@ -35,39 +35,17 @@ export default function DownloadButton({
     if (typeof window === 'undefined') return;
     
     // Check for token in URL on component mount
-    const invoiceId = searchParams.get('invoice_id');
-    const paymentStatus = searchParams.get('payment');
     const reference = searchParams.get('reference');
-    const trxref = searchParams.get('trxref');
     
-    // Handle IntaSend return (invoice_id)
-    if (invoiceId) {
-      // Verify the IntaSend transaction and get download token
-      verifyAndStoreToken(invoiceId);
+    // Handle Paystack success (reference)
+    if (reference) {
+      // Verify the Paystack transaction and get download token
+      verifyAndStoreToken(reference);
       return;
     }
     
-    // Handle legacy Paystack success
-    if (paymentStatus === 'success' && reference) {
-      // Store the token in localStorage for future use
-      const token = reference; // Use reference as token for legacy support
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(`download-token-${resourceId}`, token);
-      }
-      setHasValidToken(true);
-      
-      // Clean up the URL but ensure the page is fully loaded first
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('token');
-        url.searchParams.delete('payment');
-        url.searchParams.delete('reference');
-        url.searchParams.delete('trxref');
-        window.history.replaceState({}, '', url.toString());
-        // Force a refresh to ensure the component re-renders properly
-        router.refresh();
-      }, 500);
-    } else if (typeof window !== 'undefined' && window.localStorage && localStorage.getItem(`download-token-${resourceId}`)) {
+    // Check for existing token in localStorage
+    if (typeof window !== 'undefined' && window.localStorage && localStorage.getItem(`download-token-${resourceId}`)) {
       setHasValidToken(true);
     }
   }, [resourceId, searchParams, router]);
@@ -85,11 +63,11 @@ export default function DownloadButton({
         return;
       }
 
-      // Initiate IntaSend checkout for paid resources
+      // Initiate Paystack checkout for paid resources
       setLoading(true);
       try {
-        // Create IntaSend checkout for this resource
-        const createRes = await fetch('/api/intasend/checkout/create', {
+        // Create Paystack transaction for this resource
+        const createRes = await fetch('/api/paystack/transaction/initialize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -102,14 +80,14 @@ export default function DownloadButton({
         });
 
         if (!createRes.ok) {
-          throw new Error('Failed to create IntaSend checkout');
+          throw new Error('Failed to initialize Paystack transaction');
         }
 
-        const { checkoutUrl } = await createRes.json();
+        const { authorizationUrl } = await createRes.json();
 
-        // Redirect to IntaSend checkout page
-        if (checkoutUrl) {
-          window.location.href = checkoutUrl;
+        // Redirect to Paystack checkout page
+        if (authorizationUrl) {
+          window.location.href = authorizationUrl;
           return;
         }
       } catch (error) {
@@ -122,17 +100,17 @@ export default function DownloadButton({
     }
   };
 
-  const verifyAndStoreToken = async (invoiceId: string) => {
+  const verifyAndStoreToken = async (reference: string) => {
     setLoading(true);
     try {
-      const verifyRes = await fetch('/api/intasend/checkout/verify', {
+      const verifyRes = await fetch('/api/paystack/transaction/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoiceId }),
+        body: JSON.stringify({ reference }),
       });
 
       if (!verifyRes.ok) {
-        throw new Error('Failed to verify IntaSend transaction');
+        throw new Error('Failed to verify Paystack transaction');
       }
 
       const { downloadToken } = await verifyRes.json();
@@ -144,7 +122,7 @@ export default function DownloadButton({
         
         // Clean up URL params
         const url = new URL(window.location.href);
-        url.searchParams.delete('invoice_id');
+        url.searchParams.delete('reference');
         window.history.replaceState({}, '', url.toString());
         
         // Start download
@@ -171,33 +149,46 @@ export default function DownloadButton({
       });
       
       if (downloadResponse.ok) {
-        const { fileUrl } = await downloadResponse.json();
+        // Check if response is JSON (error) or binary (file)
+        const contentType = downloadResponse.headers.get('content-type');
         
-        // Extract filename from URL or use a default
-        const urlParts = fileUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1] || 'download.pdf';
-        
-        // Fetch the file and create a blob for proper download
-        try {
-          const fileResponse = await fetch(fileUrl);
-          const blob = await fileResponse.blob();
-          
-          const blobUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = fileName;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          
-          setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(blobUrl);
-          }, 100);
-        } catch (fetchError) {
-          console.error('Error fetching file:', fetchError);
-          window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        if (contentType && contentType.includes('application/json')) {
+          // Error response
+          const error = await downloadResponse.json();
+          console.error('Download error:', error);
+          if (error.error?.includes('token') && typeof window !== 'undefined' && window.localStorage) {
+            localStorage.removeItem(`download-token-${resourceId}`);
+            router.refresh();
+          }
+          return;
         }
+        
+        // File response - create blob and download
+        const blob = await downloadResponse.blob();
+        
+        // Get filename from Content-Disposition header or use default
+        const contentDisposition = downloadResponse.headers.get('content-disposition');
+        let fileName = 'download.pdf';
+        
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+          if (filenameMatch && filenameMatch[1]) {
+            fileName = filenameMatch[1];
+          }
+        }
+        
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(blobUrl);
+        }, 100);
       } else {
         const error = await downloadResponse.json();
         console.error('Download error:', error);

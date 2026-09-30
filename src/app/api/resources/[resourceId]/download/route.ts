@@ -1,7 +1,68 @@
 import { NextResponse } from "next/server";
 import { getResource, incrementDownloadCount } from "@/lib/actions/resource-actions";
 import { verifyDownloadToken } from "@/lib/auth-utils";
-import { cookies } from 'next/headers';
+
+// Detect MIME type from file content (magic numbers)
+function detectMimeType(buffer: ArrayBuffer): string {
+  const view = new Uint8Array(buffer);
+  
+  // PDF: %PDF (25 50 44 46)
+  if (view[0] === 0x25 && view[1] === 0x50 && view[2] === 0x44 && view[3] === 0x46) {
+    return 'application/pdf';
+  }
+  
+  // DOCX: PK (50 4B) - ZIP archive
+  if (view[0] === 0x50 && view[1] === 0x4B) {
+    // Could be DOCX, XLSX, PPTX - need to check content
+    // For simplicity, default to docx for "Document" type
+    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  }
+  
+  // PNG (89 50 4E 47)
+  if (view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4E && view[3] === 0x47) {
+    return 'image/png';
+  }
+  
+  // JPEG (FF D8 FF)
+  if (view[0] === 0xFF && view[1] === 0xD8 && view[2] === 0xFF) {
+    return 'image/jpeg';
+  }
+  
+  // MP4 (ftyp)
+  if (view[4] === 0x66 && view[5] === 0x74 && view[6] === 0x79 && view[7] === 0x70) {
+    return 'video/mp4';
+  }
+  
+  return 'application/octet-stream';
+}
+
+// Map file types to MIME types (fallback)
+function getMimeType(fileType: string): string {
+  const typeMap: { [key: string]: string } = {
+    'PDF': 'application/pdf',
+    'Document': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'Presentation': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'Spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Video': 'video/mp4',
+    'Audio': 'audio/mpeg',
+    'Image': 'image/jpeg'
+  };
+  return typeMap[fileType] || 'application/octet-stream';
+}
+
+// Get file extension from file type
+function getFileExtension(fileType: string): string {
+  const extMap: { [key: string]: string } = {
+    'PDF': '.pdf',
+    'Document': '.docx',
+    'Presentation': '.pptx',
+    'Spreadsheet': '.xlsx',
+    'Video': '.mp4',
+    'Audio': '.mp3',
+    'Image': '.jpg'
+  };
+  return extMap[fileType] || '.bin';
+}
 
 export async function POST(
   request: Request,
@@ -45,12 +106,55 @@ export async function POST(
     // Increment download count for both free and paid resources
     await incrementDownloadCount(resourceId);
     
-    return NextResponse.json({ 
-      success: true,
-      fileUrl: resource.fileUrl 
+    // Fetch the file from Cloudinary
+    const fileResponse = await fetch(resource.fileUrl);
+    
+    if (!fileResponse.ok) {
+      console.error("Failed to fetch file from Cloudinary:", fileResponse.statusText);
+      return NextResponse.json(
+        { error: "Failed to fetch file from storage" },
+        { status: 500 }
+      );
+    }
+    
+    // Get the file content as buffer
+    const fileBuffer = await fileResponse.arrayBuffer();
+    
+    // Detect MIME type from actual file content (more reliable than fileType)
+    const detectedMimeType = detectMimeType(fileBuffer);
+    
+    // Fallback to fileType-based MIME type if detection fails
+    const mimeType = detectedMimeType !== 'application/octet-stream' 
+      ? detectedMimeType 
+      : getMimeType(resource.fileType);
+    
+    // Determine file extension based on detected MIME type
+    let fileExtension = getFileExtension(resource.fileType);
+    if (detectedMimeType === 'application/pdf') {
+      fileExtension = '.pdf';
+    } else if (detectedMimeType.includes('wordprocessingml')) {
+      fileExtension = '.docx';
+    } else if (detectedMimeType.includes('presentationml')) {
+      fileExtension = '.pptx';
+    } else if (detectedMimeType.includes('spreadsheetml')) {
+      fileExtension = '.xlsx';
+    }
+    
+    const sanitizedTitle = resource.title.replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `${sanitizedTitle}${fileExtension}`;
+    
+    // Return the file with proper headers
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': mimeType,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': fileBuffer.byteLength.toString(),
+        'Cache-Control': 'public, max-age=31536000',
+      },
     });
   } catch (error: any) {
-    console.error("Download tracking error:", error);
+    console.error("Download error:", error);
     return NextResponse.json(
       { error: error.message },
       { status: 500 }

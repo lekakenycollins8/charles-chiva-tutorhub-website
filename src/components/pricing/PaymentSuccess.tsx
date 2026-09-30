@@ -15,19 +15,23 @@ export default function PaymentSuccess({ redirectPath = '/' }: PaymentSuccessPro
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your payment...');
   
-  const payment = searchParams.get('payment');
   const reference = searchParams.get('reference');
 
   useEffect(() => {
     const verifyPayment = async () => {
-      if (payment === 'success' && reference) {
+      if (reference) {
         try {
-          // Optional: Verify the payment on the client side
-          // This is not strictly necessary as the webhook will handle the actual verification
-          // But it provides immediate feedback to the user
-          
-          setStatus('success');
-          setMessage('Your payment was successful! Thank you for your purchase.');
+          // Verify the payment with Paystack API
+          const response = await fetch(`/api/paystack/transaction/verify?reference=${reference}`);
+          const data = await response.json();
+
+          if (response.ok && data.status === 'success') {
+            setStatus('success');
+            setMessage('Your payment was successful! Thank you for your purchase.');
+          } else {
+            setStatus('error');
+            setMessage('Payment verification failed. Please contact support if you believe this is an error.');
+          }
         } catch (error) {
           console.error('Error verifying payment:', error);
           setStatus('error');
@@ -40,7 +44,7 @@ export default function PaymentSuccess({ redirectPath = '/' }: PaymentSuccessPro
     };
 
     verifyPayment();
-  }, [payment, reference]);
+  }, [reference]);
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

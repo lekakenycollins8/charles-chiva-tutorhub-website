@@ -4,6 +4,7 @@ export interface PricingPlan {
   priceDisplay: string;
   priceValue: number;
   priceUnit: 'hour' | 'week' | 'month';
+  currencySymbol: string;
   features: string[];
   description: string;
   color: string;
@@ -21,6 +22,7 @@ export const pricingPlans: PricingPlan[] = [
     priceDisplay: '$10/hr',
     priceValue: 10,
     priceUnit: 'hour',
+    currencySymbol: '$',
     features: ['1-hour one-on-one session', 'Weekly homework review', 'Email support'],
     description: 'Perfect for students who need occasional help with specific topics',
     color: 'bg-blue-50',
@@ -35,6 +37,7 @@ export const pricingPlans: PricingPlan[] = [
     priceDisplay: '$40/week',
     priceValue: 40,
     priceUnit: 'week',
+    currencySymbol: '$',
     features: ['One-on-one session', 'Weekly homework review', 'Study materials', '24/7 email support'],
     description: 'Ideal for students who need regular assistance throughout the week',
     color: 'bg-purple-50',
@@ -50,6 +53,7 @@ export const pricingPlans: PricingPlan[] = [
     priceDisplay: '$80/month',
     priceValue: 80,
     priceUnit: 'month',
+    currencySymbol: '$',
     features: ['Weekly progress report', 'Customized study plan', 'Practice exams', '24/7 phone and email support'],
     description: 'Comprehensive support for students aiming for academic excellence',
     color: 'bg-amber-50',

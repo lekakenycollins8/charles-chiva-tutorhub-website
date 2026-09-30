@@ -26,7 +26,7 @@ function ResourceCard({ resource }: { resource: Resource }) {
             {resource.category}
           </span>
           {resource.isPaid ? (
-            <span className="font-semibold text-blue-600">${resource.price}</span>
+            <span className="font-semibold text-blue-600">${resource.price?.toLocaleString() || '0'}</span>
           ) : (
             <span className="text-green-600 font-semibold">Free</span>
           )}

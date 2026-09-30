@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const baseUrl = 'https://chivatutorhub.com';
   const resourceUrl = `${baseUrl}/resources/${resource.id}`;
-  const priceTag = resource.isPaid ? `$${resource.price}` : 'Free';
+  const priceTag = resource.isPaid ? `$${resource.price?.toLocaleString() || '0'}` : 'Free';
   const description = `${resource.description} - ${priceTag} ${resource.fileType.toUpperCase()} resource for ${resource.category}.`;
 
   return {
@@ -87,7 +87,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                     </CardDescription>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-sm font-semibold ${resource.isPaid ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                    {resource.isPaid ? `$${resource.price}` : 'Free'}
+                    {resource.isPaid ? `$${resource.price?.toLocaleString() || '0'}` : 'Free'}
                   </div>
                 </div>
               </CardHeader>
