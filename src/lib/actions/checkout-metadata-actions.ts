@@ -20,11 +20,11 @@ export async function storeCheckoutMetadata(checkoutId: string, metadata: any, e
   }
 }
 
-export async function getCheckoutMetadata(invoiceId: string) {
+export async function getCheckoutMetadata(checkoutId: string) {
   try {
     const checkoutMetadata = await prisma.checkoutMetadata.findFirst({
       where: {
-        invoiceId: invoiceId,
+        checkoutId: checkoutId,
       },
     });
     return checkoutMetadata?.metadata || null;

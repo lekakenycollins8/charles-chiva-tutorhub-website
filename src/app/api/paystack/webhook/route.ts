@@ -68,22 +68,31 @@ export async function POST(request: Request) {
       if (typedMetadata.type === "plan") {
         try {
           console.log("💳 Creating payment record for plan purchase");
-          const payment = await prisma.payment.create({
-            data: {
-              reference,
-              email: email || typedMetadata.email || "",
-              amount: amount || typedMetadata.totalAmount || 0,
-              status: "COMPLETED",
-              metadata: typedMetadata,
-            },
+          console.log("💳 Payment data:", { reference, email, amount, status: "COMPLETED" });
+          
+          // Check if payment already exists
+          const existingPayment = await prisma.payment.findUnique({
+            where: { reference }
           });
-          console.log("✅ Payment record created:", payment.id);
-        } catch (err: any) {
-          if (!String(err?.message || "").includes("Unique")) {
-            console.error("❌ Webhook payment persist error:", err);
+          
+          if (existingPayment) {
+            console.log("ℹ️ Payment already exists:", existingPayment.id);
+            console.log("ℹ️ Existing payment status:", existingPayment.status);
           } else {
-            console.log("ℹ️ Payment already exists (duplicate webhook)");
+            const payment = await prisma.payment.create({
+              data: {
+                reference,
+                email: email || typedMetadata.email || "",
+                amount: amount || typedMetadata.totalAmount || 0,
+                status: "COMPLETED",
+                metadata: typedMetadata,
+              },
+            });
+            console.log("✅ Payment record created:", payment.id);
           }
+        } catch (err: any) {
+          console.error("❌ Webhook payment persist error:", err);
+          console.error("❌ Error details:", err?.message, err?.code);
         }
       }
     } else {

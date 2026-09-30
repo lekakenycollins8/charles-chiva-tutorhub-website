@@ -86,7 +86,14 @@ export async function POST(request: Request) {
       console.log("🎉 Transaction initialized successfully");
       
       // Store metadata for webhook processing
-      await storeCheckoutMetadata(reference, metadata, email || "", total, CURRENCY);
+      try {
+        await storeCheckoutMetadata(reference, metadata, email || "", total, CURRENCY);
+        console.log("✅ Checkout metadata stored successfully for reference:", reference);
+      } catch (err: any) {
+        console.error("❌ Failed to store checkout metadata:", err);
+        console.error("❌ Error details:", err?.message, err?.code);
+        // Don't fail the request - the payment can still work, webhook will handle it
+      }
       
       return NextResponse.json({ 
         reference,
@@ -146,7 +153,14 @@ export async function POST(request: Request) {
       console.log("🎉 Transaction initialized successfully");
       
       // Store metadata for webhook processing
-      await storeCheckoutMetadata(reference, metadata, email || "", resource.price, CURRENCY);
+      try {
+        await storeCheckoutMetadata(reference, metadata, email || "", resource.price, CURRENCY);
+        console.log("✅ Checkout metadata stored successfully for reference:", reference);
+      } catch (err: any) {
+        console.error("❌ Failed to store checkout metadata:", err);
+        console.error("❌ Error details:", err?.message, err?.code);
+        // Don't fail the request - the payment can still work, webhook will handle it
+      }
       
       return NextResponse.json({ 
         reference,

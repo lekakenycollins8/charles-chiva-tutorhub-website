@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
@@ -12,121 +9,112 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Next-Auth User model
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("admin") // Only admin role for this application
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          String     @default("admin")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   blogPosts     BlogPost[]
 }
 
-// Resource model for study materials
 model Resource {
-  id            String    @id @default(cuid())
-  title         String
-  description   String
-  fileUrl       String
-  fileType      String
-  fileSize      Int
-  isPaid        Boolean   @default(false)
-  price         Float?    // Only applicable if isPaid is true
-  category      String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  downloads     Int       @default(0)
-}
-
-// Video model for tutorial videos
-model Video {
-  id            String    @id @default(cuid())
-  title         String
-  description   String
-  videoUrl      String
-  videoType     String
-  videoSize     Int
-  thumbnailUrl  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  views         Int       @default(0)
-}
-
-// Contact form submission model
-model ContactSubmission {
-  id            String   @id @default(cuid())
-  name          String
-  email         String
-  phone         String?
-  subject       String
-  message       String
-  source        String?  // "homepage" or "contact_page"
-  status        String   @default("NEW") // NEW, IN_PROGRESS, RESOLVED
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-// Blog Post Model
-model BlogPost {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
-  slug        String    @unique
+  description String
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  isPaid      Boolean  @default(false)
+  price       Float?
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  downloads   Int      @default(0)
+}
+
+model Video {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  videoUrl     String
+  videoType    String
+  videoSize    Int
+  thumbnailUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  views        Int      @default(0)
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  source    String?
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlogPost {
+  id          String             @id @default(cuid())
+  title       String
+  slug        String             @unique
   excerpt     String
   content     String
   coverImage  String?
-  isPublished Boolean   @default(false)
-  isDraft     Boolean   @default(true)
+  isPublished Boolean            @default(false)
+  isDraft     Boolean            @default(true)
   publishedAt DateTime?
   authorId    String
-  author      User      @relation(fields: [authorId], references: [id])
   categories  String[]
   tags        String[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  author      User               @relation(fields: [authorId], references: [id])
   relatedTo   BlogPostRelation[] @relation("PostRelations")
   relatedFrom BlogPostRelation[] @relation("RelatedPosts")
 }
 
-// Join table replacing the former relatedPosts String[] @db.ObjectId array
 model BlogPostRelation {
   postId    String
   relatedId String
-  post      BlogPost @relation("PostRelations", fields: [postId],    references: [id], onDelete: Cascade)
-  related   BlogPost @relation("RelatedPosts",  fields: [relatedId], references: [id], onDelete: Cascade)
+  post      BlogPost @relation("PostRelations", fields: [postId], references: [id], onDelete: Cascade)
+  related   BlogPost @relation("RelatedPosts", fields: [relatedId], references: [id], onDelete: Cascade)
 
   @@id([postId, relatedId])
 }
 
-// Payment model for tracking both resource and pricing plan payments
 model Payment {
-  id            String    @id @default(cuid())
-  reference     String    @unique  // Payment reference (Paystack transaction reference)
-  email         String    // Customer email
-  amount        Float     // Amount paid in main currency (dollars)
-  status        String    // Payment status (completed, failed, etc.)
-  resourceId    String?   // Optional reference to a resource if it's a resource payment
-  metadata      Json?     // Additional payment metadata (plan details, etc.)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  reference  String   @unique
+  email      String
+  amount     Float
+  status     String
+  resourceId String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
-// Checkout metadata model for temporary storage of checkout session data
 model CheckoutMetadata {
-  id          String   @id @default(cuid())
-  checkoutId  String   @unique // Checkout ID (Paystack reference)
-  invoiceId   String   // Invoice ID (from webhook)
-  metadata    Json     // Original checkout metadata (type, resourceId, etc.)
-  email       String   // Customer email
-  amount      Float    // Payment amount
-  currency    String   // Payment currency
-  status      String   @default("PENDING") // PENDING, COMPLETED, EXPIRED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  checkoutId String   @unique
+  invoiceId  String
+  metadata   Json
+  email      String
+  amount     Float
+  currency   String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  // Auto-cleanup index for expired records
   @@index([updatedAt])
 }
