@@ -104,7 +104,7 @@ model BlogPostRelation {
 // Payment model for tracking both resource and pricing plan payments
 model Payment {
   id            String    @id @default(cuid())
-  reference     String    @unique  // IntaSend invoice reference
+  reference     String    @unique  // Payment reference (Paystack transaction reference)
   email         String    // Customer email
   amount        Float     // Amount paid in main currency (dollars)
   status        String    // Payment status (completed, failed, etc.)
@@ -117,8 +117,8 @@ model Payment {
 // Checkout metadata model for temporary storage of checkout session data
 model CheckoutMetadata {
   id          String   @id @default(cuid())
-  checkoutId  String   @unique // IntaSend checkout ID
-  invoiceId   String   // IntaSend invoice ID (from webhook)
+  checkoutId  String   @unique // Checkout ID (Paystack reference)
+  invoiceId   String   // Invoice ID (from webhook)
   metadata    Json     // Original checkout metadata (type, resourceId, etc.)
   email       String   // Customer email
   amount      Float    // Payment amount

@@ -139,7 +139,7 @@ export default function PrivacyPolicyPage() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-gray-900 mb-2">Payment Processors</h4>
                   <p className="text-gray-700">
-                    We use secure third-party payment processors (such as Stripe and IntaSend) to handle transactions. We do not store your complete payment card information on our servers.
+                    We use secure third-party payment processors (such as Paystack) to handle transactions. We do not store your complete payment card information on our servers.
                   </p>
                 </div>
 
