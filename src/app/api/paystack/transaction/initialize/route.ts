@@ -7,6 +7,14 @@ import { storeCheckoutMetadata } from "@/lib/checkout-metadata-db";
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 const CURRENCY = process.env.PAYSTACK_CURRENCY || "USD";
 
+// Validate callback URL for production
+const validateCallbackUrl = (url: string) => {
+  if (process.env.NODE_ENV === 'production' && (url.includes('localhost') || url.includes('127.0.0.1'))) {
+    throw new Error('Invalid callback URL: localhost URLs are not allowed in production. Please set NEXT_PUBLIC_SITE_URL or SITE_URL environment variable.');
+  }
+  return url;
+};
+
 function generateReference(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 9);
@@ -36,6 +44,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Invalid plan/quantity" }, { status: 400 });
       }
 
+      if (!email || !email.includes('@')) {
+        return NextResponse.json({ error: "Valid email address is required" }, { status: 400 });
+      }
+
       const plan = pricingPlans.find((p) => p.id === planId);
       if (!plan) {
         return NextResponse.json({ error: "Plan not found" }, { status: 404 });
@@ -59,12 +71,14 @@ export async function POST(request: Request) {
         city,
       };
 
+      const callbackUrl = validateCallbackUrl(`${SITE_URL}/pricing/success?reference=${reference}`);
+
       const payload = {
-        email: email || "",
+        email: email,
         amount: total * 100, // Paystack expects amount in smallest currency unit
         currency: CURRENCY,
         reference,
-        callback_url: `${SITE_URL}/pricing/success?reference=${reference}`,
+        callback_url: callbackUrl,
         metadata: {
           custom_fields: [
             {
@@ -78,7 +92,6 @@ export async function POST(request: Request) {
               value: quantity.toString(),
             },
           ],
-          ...metadata,
         },
       };
 
@@ -113,6 +126,10 @@ export async function POST(request: Request) {
       if (!resourceId) {
         return NextResponse.json({ error: "Resource ID required" }, { status: 400 });
       }
+
+      if (!email || !email.includes('@')) {
+        return NextResponse.json({ error: "Valid email address is required" }, { status: 400 });
+      }
       
       const { success, resource } = await getResource(resourceId);
       if (!success || !resource) {
@@ -131,12 +148,14 @@ export async function POST(request: Request) {
         lastName,
       };
 
+      const callbackUrl = validateCallbackUrl(`${SITE_URL}/resources/${resourceId}?reference=${reference}`);
+
       const payload = {
-        email: email || "",
+        email: email,
         amount: resource.price * 100, // Paystack expects amount in smallest currency unit
         currency: CURRENCY,
         reference,
-        callback_url: `${SITE_URL}/resources/${resourceId}?reference=${reference}`,
+        callback_url: callbackUrl,
         metadata: {
           custom_fields: [
             {
@@ -145,7 +164,6 @@ export async function POST(request: Request) {
               value: resourceId,
             },
           ],
-          ...metadata,
         },
       };
 
@@ -171,15 +189,17 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: "Unsupported payment type" }, { status: 400 });
   } catch (error: any) {
-    console.error("Paystack initialize transaction error:", error?.response?.data || error);
-    
+    console.error("❌ Paystack initialize transaction error:", error?.response?.data || error);
+
     // Return detailed error for debugging
-    const errorMessage = error?.response?.data?.message || error?.message || "Failed to initialize transaction";
+    const paystackError = error?.response?.data;
+    const errorMessage = paystackError?.message || error?.message || "Failed to initialize transaction";
     const statusCode = error?.response?.status || 500;
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       error: errorMessage,
-      details: error?.response?.data || error?.message 
+      details: paystackError || error?.message,
+      paystackErrorCode: paystackError?.code,
     }, { status: statusCode });
   }
 }

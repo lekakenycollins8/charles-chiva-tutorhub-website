@@ -29,7 +29,9 @@ export async function initializeTransaction(payload: {
   }
 
   try {
-    console.log("🔧 Paystack API: Initializing transaction with payload:", payload);
+    console.log("🔧 Paystack API: Initializing transaction");
+    console.log("🔧 Secret key format:", secretKey.substring(0, 7) + "...");
+    console.log("🔧 Payload:", JSON.stringify(payload, null, 2));
     
     const response = await axios.post(`${baseUrl}/transaction/initialize`, payload, {
       headers: {
@@ -41,13 +43,12 @@ export async function initializeTransaction(payload: {
     console.log("✅ Paystack API: Transaction initialized:", response.data);
     return response.data;
   } catch (error: any) {
-    console.error("❌ Paystack initialize transaction error:", error);
-    console.error("❌ Error details:", {
-      message: error?.message,
-      status: error?.response?.status,
-      statusText: error?.response?.statusText,
-      data: error?.response?.data
-    });
+    console.error("❌ Paystack initialize transaction error:");
+    console.error("❌ Status:", error?.response?.status);
+    console.error("❌ Status Text:", error?.response?.statusText);
+    console.error("❌ Error Data:", JSON.stringify(error?.response?.data, null, 2));
+    console.error("❌ Error Message:", error?.message);
+    console.error("❌ Request Payload:", JSON.stringify(payload, null, 2));
     throw error;
   }
 }
