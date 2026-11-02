@@ -12,6 +12,7 @@ import { AlertCircle, Loader2, CheckCircle, Image as ImageIcon, X } from "lucide
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getCategoryNames } from "@/lib/constants/resource-categories";
+import { uploadToCloudinary } from "@/lib/cloudinary-upload";
 
 // Define the file types
 const FILE_TYPES = [
@@ -119,7 +120,7 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
         throw new Error("Price must be greater than 0 for paid resources");
       }
 
-      // If there's a file to upload, upload it first via the API directly
+      // If there's a file to upload, upload it directly to Cloudinary
       let fileUrl = resource?.fileUrl || "";
       let fileType = formData.fileType;
       let fileSize = resource?.fileSize || 0;
@@ -130,41 +131,21 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
           description: "Please wait while your file is being uploaded."
         });
 
-        // Create FormData for file upload
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", file);
-
-        // Map the form fileType to the API fileType
-        let apiFileType = "document";
-        if (["PDF", "Document", "Presentation", "Spreadsheet"].includes(formData.fileType)) {
-          apiFileType = "document";
-        } else if (["Video", "Audio"].includes(formData.fileType)) {
-          apiFileType = "video";
+        // Map the form fileType to Cloudinary upload type
+        let uploadType: 'image' | 'video' | 'document' = 'document';
+        if (["Video", "Audio"].includes(formData.fileType)) {
+          uploadType = 'video';
         } else if (["Image"].includes(formData.fileType)) {
-          apiFileType = "image";
+          uploadType = 'image';
         }
 
-        uploadFormData.append("fileType", apiFileType);
-
-        // Upload the file directly to the API
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData
-        });
-
-        setUploadProgress(70);
-
-        if (!uploadResponse.ok) {
-          const error = await uploadResponse.json();
-          throw new Error(error.error || 'Failed to upload file');
-        }
-
-        const uploadResult = await uploadResponse.json();
+        // Upload directly to Cloudinary
+        const uploadResult = await uploadToCloudinary(file, uploadType);
         fileUrl = uploadResult.url;
         fileType = uploadResult.type;
         fileSize = uploadResult.size;
 
-        setUploadProgress(100);
+        setUploadProgress(70);
       }
 
       // Upload thumbnail if provided
@@ -174,23 +155,13 @@ export default function ResourceForm({ resource }: ResourceFormProps) {
           description: "Please wait while your thumbnail is being uploaded."
         });
 
-        const thumbnailFormData = new FormData();
-        thumbnailFormData.append("file", thumbnailFile);
-        thumbnailFormData.append("fileType", "image");
-
-        const thumbnailUploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: thumbnailFormData
-        });
-
-        if (!thumbnailUploadResponse.ok) {
-          const error = await thumbnailUploadResponse.json();
-          throw new Error(error.error || 'Failed to upload thumbnail');
-        }
-
-        const thumbnailUploadResult = await thumbnailUploadResponse.json();
+        const thumbnailUploadResult = await uploadToCloudinary(thumbnailFile, 'image');
         thumbnailUrl = thumbnailUploadResult.url;
+
+        setUploadProgress(90);
       }
+
+      setUploadProgress(100);
 
       // Create FormData for resource submission
       const formDataToSend = new FormData();
