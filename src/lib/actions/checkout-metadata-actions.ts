@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/db";
 
-export async function storeCheckoutMetadata(checkoutId: string, metadata: any, email: string, amount: number, currency: string) {
+export async function storeCheckoutMetadata(checkoutId: string, invoiceId: string, metadata: any, email: string, amount: number, currency: string) {
   try {
     const checkoutMetadata = await prisma.checkoutMetadata.create({
       data: {
         checkoutId,
-        invoiceId: "", // Will be updated when webhook arrives
+        invoiceId,
         metadata,
         email,
         amount,
@@ -22,11 +22,22 @@ export async function storeCheckoutMetadata(checkoutId: string, metadata: any, e
 
 export async function getCheckoutMetadata(checkoutId: string) {
   try {
-    const checkoutMetadata = await prisma.checkoutMetadata.findFirst({
+    // Try to find by checkoutId (MerchantRequestID) first
+    let checkoutMetadata = await prisma.checkoutMetadata.findFirst({
       where: {
         checkoutId: checkoutId,
       },
     });
+
+    // If not found, try by invoiceId (CheckoutRequestID)
+    if (!checkoutMetadata) {
+      checkoutMetadata = await prisma.checkoutMetadata.findFirst({
+        where: {
+          invoiceId: checkoutId,
+        },
+      });
+    }
+
     return checkoutMetadata?.metadata || null;
   } catch (error: any) {
     console.error("Error retrieving checkout metadata:", error);

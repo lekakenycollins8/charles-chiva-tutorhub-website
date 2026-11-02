@@ -23,18 +23,19 @@ model User {
 }
 
 model Resource {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  fileUrl     String
-  fileType    String
-  fileSize    Int
-  isPaid      Boolean  @default(false)
-  price       Float?
-  category    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  downloads   Int      @default(0)
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  fileUrl      String
+  fileType     String
+  fileSize     Int
+  isPaid       Boolean  @default(false)
+  price        Float?
+  category     String
+  thumbnailUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  downloads    Int      @default(0)
 }
 
 model Video {
@@ -93,28 +94,34 @@ model BlogPostRelation {
 }
 
 model Payment {
-  id         String   @id @default(cuid())
-  reference  String   @unique
-  email      String
-  amount     Float
-  status     String
-  resourceId String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  reference           String   @unique
+  email               String
+  amount              Float
+  status              String
+  resourceId          String?
+  metadata            Json?
+  merchantRequestID    String?
+  mpesaReceiptNumber  String?
+  phoneNumber         String?
+  paymentMethod       String   @default("mpesa")
+  transactionType     String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model CheckoutMetadata {
-  id         String   @id @default(cuid())
-  checkoutId String   @unique
-  invoiceId  String
-  metadata   Json
-  email      String
-  amount     Float
-  currency   String
-  status     String   @default("PENDING")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  checkoutId    String   @unique
+  invoiceId     String
+  metadata      Json
+  email         String
+  amount        Float
+  currency      String
+  status        String   @default("PENDING")
+  paymentMethod String   @default("mpesa")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([updatedAt])
 }

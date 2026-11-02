@@ -10,6 +10,7 @@ export interface Resource {
   isPaid: boolean;
   price: number | null;
   category: string;
+  thumbnailUrl: string | null;
   downloads: number;
 }
 

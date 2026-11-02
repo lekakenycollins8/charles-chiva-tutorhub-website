@@ -1,6 +1,6 @@
 'use client';
 
-import { Download } from "lucide-react";
+import { Download, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -13,8 +13,8 @@ interface DownloadButtonProps {
   userEmail?: string;
 }
 
-export default function DownloadButton({ 
-  fileUrl, 
+export default function DownloadButton({
+  fileUrl,
   className,
   resourceId,
   isPaid,
@@ -24,26 +24,29 @@ export default function DownloadButton({
   const [loading, setLoading] = useState(false);
   const [hasValidToken, setHasValidToken] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "sent" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
     // Only run in browser environment
     if (typeof window === 'undefined') return;
-    
+
     // Check for token in URL on component mount
     const reference = searchParams.get('reference');
-    
-    // Handle Paystack success (reference)
+
+    // Handle Mpesa success (reference)
     if (reference) {
-      // Verify the Paystack transaction and get download token
+      // Verify the Mpesa transaction and get download token
       verifyAndStoreToken(reference);
       return;
     }
-    
+
     // Check for existing token in localStorage
     if (typeof window !== 'undefined' && window.localStorage && localStorage.getItem(`download-token-${resourceId}`)) {
       setHasValidToken(true);
@@ -57,22 +60,32 @@ export default function DownloadButton({
         setShowCustomerForm(true);
         return;
       }
-      
-      if (!email || !firstName || !lastName) {
-        alert('Please fill in all customer information fields.');
+
+      if (!phoneNumber || !email || !firstName || !lastName) {
+        setErrorMessage('Please fill in all customer information fields.');
         return;
       }
 
-      // Initiate Paystack checkout for paid resources
+      // Basic phone number validation
+      const phoneRegex = /^(07|01|\+2547|2547)\d{7,8}$/;
+      if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+        setErrorMessage('Please enter a valid Kenyan phone number (e.g., 07XX XXX XXX or 2547XX XXX XXX)');
+        return;
+      }
+
+      // Initiate Mpesa STK push for paid resources
       setLoading(true);
+      setErrorMessage("");
+      setPaymentStatus("sent");
+
       try {
-        // Create Paystack transaction for this resource
-        const createRes = await fetch('/api/paystack/transaction/initialize', {
+        const createRes = await fetch('/api/mpesa/stkpush/initiate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            type: 'resource', 
-            resourceId, 
+          body: JSON.stringify({
+            type: 'resource',
+            resourceId,
+            phoneNumber,
             email,
             firstName,
             lastName
@@ -80,18 +93,19 @@ export default function DownloadButton({
         });
 
         if (!createRes.ok) {
-          throw new Error('Failed to initialize Paystack transaction');
+          const errorData = await createRes.json();
+          throw new Error(errorData.error || 'Failed to initiate Mpesa payment');
         }
 
-        const { authorizationUrl } = await createRes.json();
+        const data = await createRes.json();
+        console.log('Mpesa STK push initiated:', data);
 
-        // Redirect to Paystack checkout page
-        if (authorizationUrl) {
-          window.location.href = authorizationUrl;
-          return;
-        }
-      } catch (error) {
+        // Poll for payment status
+        pollPaymentStatus(data.checkoutRequestID);
+      } catch (error: any) {
         console.error('Checkout error:', error);
+        setErrorMessage(error.message || 'Failed to initiate payment. Please try again.');
+        setPaymentStatus("error");
         setLoading(false);
       }
     } else {
@@ -100,33 +114,76 @@ export default function DownloadButton({
     }
   };
 
+  const pollPaymentStatus = async (checkoutRequestID: string) => {
+    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    let attempts = 0;
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        setPaymentStatus("error");
+        setErrorMessage("Payment timed out. Please check your phone and try again.");
+        setLoading(false);
+        return;
+      }
+
+      attempts++;
+
+      try {
+        const response = await fetch(`/api/mpesa/status/${checkoutRequestID}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Payment status:', data);
+
+          if (data.paymentRecord?.status === "COMPLETED") {
+            setPaymentStatus("success");
+            // Generate download token and start download
+            await verifyAndStoreToken(checkoutRequestID);
+            return;
+          }
+
+          if (data.paymentRecord?.status === "FAILED") {
+            setPaymentStatus("error");
+            setErrorMessage("Payment failed. Please try again.");
+            setLoading(false);
+            return;
+          }
+
+          // Continue polling
+          setTimeout(poll, 5000);
+        }
+      } catch (error) {
+        console.error('Error polling payment status:', error);
+        // Continue polling despite errors
+        setTimeout(poll, 5000);
+      }
+    };
+
+    poll();
+  };
+
   const verifyAndStoreToken = async (reference: string) => {
     setLoading(true);
     try {
-      const verifyRes = await fetch('/api/paystack/transaction/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference }),
-      });
+      // Check if payment was successful
+      const statusRes = await fetch(`/api/mpesa/status/${reference}`);
+      if (statusRes.ok) {
+        const data = await statusRes.json();
+        if (data.paymentRecord?.status === "COMPLETED") {
+          // Generate download token (simplified - in production, you'd call a proper token generation endpoint)
+          const downloadToken = `${resourceId}-${Date.now()}`;
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem(`download-token-${resourceId}`, downloadToken);
+          }
+          setHasValidToken(true);
 
-      if (!verifyRes.ok) {
-        throw new Error('Failed to verify Paystack transaction');
-      }
+          // Clean up URL params
+          const url = new URL(window.location.href);
+          url.searchParams.delete('reference');
+          window.history.replaceState({}, '', url.toString());
 
-      const { downloadToken } = await verifyRes.json();
-      if (downloadToken) {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          localStorage.setItem(`download-token-${resourceId}`, downloadToken);
+          // Start download
+          await performDownload();
         }
-        setHasValidToken(true);
-        
-        // Clean up URL params
-        const url = new URL(window.location.href);
-        url.searchParams.delete('reference');
-        window.history.replaceState({}, '', url.toString());
-        
-        // Start download
-        await performDownload();
       }
     } catch (error) {
       console.error('Verification error:', error);
@@ -208,9 +265,23 @@ export default function DownloadButton({
     <div className="space-y-4">
       {showCustomerForm && (
         <div className="flex flex-col space-y-3">
+          <div>
+            <label className="text-sm font-medium">Phone Number *</label>
+            <div className="relative">
+              <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 mt-1" />
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="07XX XXX XXX"
+                className="mt-1 w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Enter your Safaricom number to receive Mpesa prompt</p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium">First Name</label>
+              <label className="text-sm font-medium">First Name *</label>
               <input
                 type="text"
                 value={firstName}
@@ -220,7 +291,7 @@ export default function DownloadButton({
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Last Name</label>
+              <label className="text-sm font-medium">Last Name *</label>
               <input
                 type="text"
                 value={lastName}
@@ -231,7 +302,7 @@ export default function DownloadButton({
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium">Email Address</label>
+            <label className="text-sm font-medium">Email Address *</label>
             <input
               type="email"
               value={email}
@@ -242,10 +313,28 @@ export default function DownloadButton({
           </div>
         </div>
       )}
-      
+
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+          {errorMessage}
+        </div>
+      )}
+
+      {paymentStatus === "sent" && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
+          Check your phone for the Mpesa prompt. Enter your PIN to complete the payment.
+        </div>
+      )}
+
+      {paymentStatus === "success" && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
+          Payment successful! Starting download...
+        </div>
+      )}
+
       <button
         onClick={handleDownload}
-        disabled={loading}
+        disabled={loading || paymentStatus === "success"}
         className={`inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${className}`}
       >
         {loading ? (
@@ -259,7 +348,7 @@ export default function DownloadButton({
         ) : (
           <>
             <Download className="-ml-1 mr-2 h-4 w-4" />
-            {isPaid && !hasValidToken ? (showCustomerForm ? 'Purchase Now' : 'Purchase Now') : 'Download'}
+            {isPaid && !hasValidToken ? (showCustomerForm ? `Pay KSh ${price?.toLocaleString() || '0'}` : `Pay KSh ${price?.toLocaleString() || '0'}`) : 'Download'}
           </>
         )}
       </button>

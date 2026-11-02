@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Filter, Download, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileText, Plus, Filter, Download, Search, Loader2, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { getResources } from "@/lib/actions/resource-actions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCategoryNames } from "@/lib/constants/resource-categories";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -117,8 +118,8 @@ export default function ResourcesPage() {
               />
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Select 
-                value={categoryFilter} 
+              <Select
+                value={categoryFilter}
                 onValueChange={setCategoryFilter}
                 disabled={loading}
               >
@@ -128,7 +129,7 @@ export default function ResourcesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
+                  {getCategoryNames().map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
@@ -184,8 +185,16 @@ export default function ResourcesPage() {
                   <div className="px-6 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-start sm:items-center gap-4">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-primary" />
+                        <div className="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center">
+                          {resource.thumbnailUrl ? (
+                            <img
+                              src={resource.thumbnailUrl}
+                              alt={resource.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <FileText className="h-5 w-5 text-primary" />
+                          )}
                         </div>
                         <div>
                           <div className="font-medium">{resource.title}</div>
@@ -207,11 +216,11 @@ export default function ResourcesPage() {
                       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                         <div className="flex-shrink-0">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            resource.isPaid 
-                              ? 'bg-blue-100 text-blue-800' 
+                            resource.isPaid
+                              ? 'bg-blue-100 text-blue-800'
                               : 'bg-green-100 text-green-800'
                           }`}>
-                            {resource.isPaid ? `$${resource.price?.toLocaleString() || '0'}` : 'Free'}
+                            {resource.isPaid ? `KSh ${resource.price?.toLocaleString() || '0'}` : 'Free'}
                           </span>
                         </div>
                         <div className="flex gap-2">

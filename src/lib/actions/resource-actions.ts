@@ -35,6 +35,7 @@ export interface ResourceData {
   isPaid: boolean;
   price?: number | null;
   category: string;
+  thumbnailUrl?: string | null;
 }
 
 // Types for resource filters and pagination
@@ -53,18 +54,18 @@ export async function getResources(filters: ResourceFilters = {}) {
     const page = filters.page || 1;
     const limit = filters.limit || 10;
     const skip = (page - 1) * limit;
-    
+
     // Build query conditions
     const where: any = {};
-    
+
     if (filters.category) {
       where.category = filters.category;
     }
-    
+
     if (filters.isPaid !== undefined) {
       where.isPaid = filters.isPaid;
     }
-    
+
     if (filters.searchQuery) {
       where.OR = [
         { title: { contains: filters.searchQuery, mode: 'insensitive' } },
@@ -72,10 +73,10 @@ export async function getResources(filters: ResourceFilters = {}) {
         { category: { contains: filters.searchQuery, mode: 'insensitive' } }
       ];
     }
-    
+
     // Get total count for pagination
     const total = await prisma.resource.count({ where });
-    
+
     // Fetch paginated resources
     const resources = await prisma.resource.findMany({
       where,
@@ -90,6 +91,7 @@ export async function getResources(filters: ResourceFilters = {}) {
         isPaid: true,
         price: true,
         category: true,
+        thumbnailUrl: true,
         downloads: true,
         createdAt: true,
         updatedAt: true
@@ -97,7 +99,7 @@ export async function getResources(filters: ResourceFilters = {}) {
       skip,
       take: limit
     });
-    
+
     // Optionally include counts for free/paid resources
     let counts;
     if (filters.includeCounts) {
@@ -111,9 +113,9 @@ export async function getResources(filters: ResourceFilters = {}) {
         paid: paidCount
       };
     }
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       data: resources,
       pagination: {
         total,
@@ -122,14 +124,14 @@ export async function getResources(filters: ResourceFilters = {}) {
         totalPages: Math.ceil(total / limit)
       },
       counts,
-      error: null 
+      error: null
     };
   } catch (error) {
     console.error("Error fetching resources:", error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       data: [],
-      error: error instanceof Error ? error.message : "Failed to fetch resources" 
+      error: error instanceof Error ? error.message : "Failed to fetch resources"
     };
   }
 }
@@ -141,11 +143,11 @@ export async function getResource(id: string) {
     const resource = await prisma.resource.findUnique({
       where: { id }
     });
-    
+
     if (!resource) {
       throw new Error(`Resource with ID ${id} not found`);
     }
-    
+
     return { success: true, resource };
   } catch (error) {
     console.error(`Error fetching resource ${id}:`, error);
@@ -165,6 +167,7 @@ export async function createResource(formData: FormData) {
     const fileUrl = formData.get('fileUrl') as string;
     const fileSize = parseInt(formData.get('fileSize') as string, 10);
     const price = isPaid ? parseFloat(formData.get('price') as string) : null;
+    const thumbnailUrl = formData.get('thumbnailUrl') as string | null;
 
     // Validate required fields
     if (!title || !description || !category || !fileType || !fileUrl) {
@@ -185,6 +188,7 @@ export async function createResource(formData: FormData) {
         category,
         fileUrl,
         fileSize,
+        thumbnailUrl,
       }
     });
 
@@ -198,9 +202,9 @@ export async function createResource(formData: FormData) {
     };
   } catch (error) {
     console.error("Error creating resource:", error);
-    return { 
-      success: false, 
-      message: error instanceof Error ? error.message : "Failed to create resource" 
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to create resource"
     };
   }
 }
@@ -212,14 +216,14 @@ export async function updateResource(id: string, formData: FormData) {
     const existingResource = await prisma.resource.findUnique({
       where: { id }
     });
-    
+
     if (!existingResource) {
       return {
         success: false,
         message: `Resource with ID ${id} not found`
       };
     }
-    
+
     // Extract form data
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
@@ -228,6 +232,7 @@ export async function updateResource(id: string, formData: FormData) {
     const fileType = formData.get('fileType') as string;
     const fileUrl = formData.get('fileUrl') as string;
     const price = isPaid ? parseFloat(formData.get('price') as string) : null;
+    const thumbnailUrl = formData.get('thumbnailUrl') as string | null;
 
     // Validate required fields
     if (!title || !description || !category || !fileType) {
@@ -236,7 +241,7 @@ export async function updateResource(id: string, formData: FormData) {
         message: 'Missing required fields'
       };
     }
-    
+
     // Prepare update data
     const updateData: any = {
       title,
@@ -246,24 +251,29 @@ export async function updateResource(id: string, formData: FormData) {
       price,
       fileType
     };
-    
+
     // Only update file-related fields if a new file was uploaded
     if (fileUrl && fileUrl !== existingResource.fileUrl) {
       updateData.fileUrl = fileUrl;
       updateData.fileSize = parseInt(formData.get('fileSize') as string, 10);
     }
-    
+
+    // Update thumbnail if provided
+    if (thumbnailUrl !== null) {
+      updateData.thumbnailUrl = thumbnailUrl;
+    }
+
     // Update resource in database
     const resource = await prisma.resource.update({
       where: { id },
       data: updateData
     });
-    
+
     // Revalidate the resources path to update the UI
     revalidatePath("/admin/dashboard/resources");
     revalidatePath("/resources");
     revalidatePath(`/resources/${resource.id}`);
-    
+
     return {
       success: true,
       resource
@@ -284,20 +294,20 @@ export async function deleteResource(id: string) {
     const existingResource = await prisma.resource.findUnique({
       where: { id }
     });
-    
+
     if (!existingResource) {
       throw new Error(`Resource with ID ${id} not found`);
     }
-    
+
     // Delete the resource from database
     await prisma.resource.delete({
       where: { id }
     });
-    
+
     // Revalidate the resources path to update the UI
     revalidatePath("/admin/dashboard/resources");
     revalidatePath("/resources");
-    
+
     return { success: true };
   } catch (error) {
     console.error(`Error deleting resource ${id}:`, error);
@@ -312,11 +322,11 @@ export async function incrementDownloadCount(id: string) {
     const existingResource = await prisma.resource.findUnique({
       where: { id }
     });
-    
+
     if (!existingResource) {
       throw new Error(`Resource with ID ${id} not found`);
     }
-    
+
     // Increment download count in database
     await prisma.resource.update({
       where: { id },
@@ -324,7 +334,7 @@ export async function incrementDownloadCount(id: string) {
         downloads: { increment: 1 }
       }
     });
-    
+
     return { success: true };
   } catch (error) {
     console.error(`Error incrementing download count for resource ${id}:`, error);
@@ -350,18 +360,19 @@ export async function getFeaturedResources(limit: number = 3) {
         isPaid: true,
         price: true,
         category: true,
+        thumbnailUrl: true,
         downloads: true,
         createdAt: true,
         updatedAt: true
       }
     });
-    
+
     // Then get newest resources, excluding those already in topDownloaded
     const topDownloadedIds = topDownloaded.map(resource => resource.id);
     const newest = await prisma.resource.findMany({
-      where: {
+      where: topDownloadedIds.length > 0 ? {
         id: { notIn: topDownloadedIds }
-      },
+      } : undefined,
       orderBy: { createdAt: 'desc' },
       take: limit - topDownloaded.length,
       select: {
@@ -374,32 +385,59 @@ export async function getFeaturedResources(limit: number = 3) {
         isPaid: true,
         price: true,
         category: true,
+        thumbnailUrl: true,
         downloads: true,
         createdAt: true,
         updatedAt: true
       }
     });
-    
+
     // Combine and shuffle the results to create a diverse featured list
     const featured = [...topDownloaded, ...newest];
-    
+
     // Simple shuffle algorithm (Fisher-Yates)
     for (let i = featured.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [featured[i], featured[j]] = [featured[j], featured[i]];
     }
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       data: featured.slice(0, limit),
-      error: null 
+      error: null
     };
   } catch (error) {
     console.error("Error fetching featured resources:", error);
-    return { 
-      success: false, 
+    // Return empty array instead of error to avoid breaking the homepage
+    return {
+      success: true,
       data: [],
-      error: error instanceof Error ? error.message : "Failed to fetch featured resources" 
+      error: null
+    };
+  }
+}
+
+// Function to get resource counts by category
+export async function getCategoryCounts(): Promise<{ success: boolean; counts: Record<string, number>; error?: string }> {
+  try {
+    const resources = await prisma.resource.findMany({
+      select: {
+        category: true
+      }
+    });
+
+    const counts: Record<string, number> = {};
+    resources.forEach(resource => {
+      counts[resource.category] = (counts[resource.category] || 0) + 1;
+    });
+
+    return { success: true, counts };
+  } catch (error) {
+    console.error("Error fetching category counts:", error);
+    return {
+      success: false,
+      counts: {},
+      error: error instanceof Error ? error.message : "Failed to fetch category counts"
     };
   }
 }

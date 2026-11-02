@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const baseUrl = 'https://chivatutorhub.com';
   const resourceUrl = `${baseUrl}/resources/${resource.id}`;
-  const priceTag = resource.isPaid ? `$${resource.price?.toLocaleString() || '0'}` : 'Free';
+  const priceTag = resource.isPaid ? `KSh ${resource.price?.toLocaleString() || '0'}` : 'Free';
   const description = `${resource.description} - ${priceTag} ${resource.fileType.toUpperCase()} resource for ${resource.category}.`;
 
   return {
@@ -87,7 +87,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                     </CardDescription>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-sm font-semibold ${resource.isPaid ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                    {resource.isPaid ? `$${resource.price?.toLocaleString() || '0'}` : 'Free'}
+                    {resource.isPaid ? `KSh ${resource.price?.toLocaleString() || '0'}` : 'Free'}
                   </div>
                 </div>
               </CardHeader>
@@ -134,15 +134,25 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                 <CardTitle>Resource Preview</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center py-6">
-                <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                  <FileText className="h-12 w-12 text-blue-600" />
-                </div>
+                {resource.thumbnailUrl ? (
+                  <div className="w-full mb-4">
+                    <img
+                      src={resource.thumbnailUrl}
+                      alt={resource.title}
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                    <FileText className="h-12 w-12 text-blue-600" />
+                  </div>
+                )}
                 <h3 className="font-medium text-center">{resource.title}</h3>
                 <p className="text-sm text-gray-500 text-center mt-1">{resource.fileType}</p>
               </CardContent>
               {!resource.isPaid && (
                 <CardFooter className="border-t pt-6">
-                  <DownloadButton 
+                  <DownloadButton
                     fileUrl={resource.fileUrl}
                     resourceId={resource.id}
                     isPaid={resource.isPaid}

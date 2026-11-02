@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import PricingCTA from './PricingCTA';
-import PaystackPricingButton from './PaystackPricingButton';
+import MpesaPricingButton from './MpesaPricingButton';
 import { motion } from 'framer-motion';
 
 const icons = {
@@ -159,11 +159,11 @@ export default function PricingSection() {
                   </CardContent>
                   
                   <CardFooter className="pt-6 pb-8 px-8">
-                    <PaystackPricingButton 
+                    <MpesaPricingButton
                       plan={plan}
                       className={`py-4 text-lg font-semibold transition-all duration-300 ${
-                        isPopular 
-                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl' 
+                        isPopular
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
                           : ''
                       }`}
                     />

@@ -7,7 +7,7 @@ A comprehensive tutoring platform built with Next.js that connects students with
 - **Resource Management**: Browse and download educational materials with secure access control
 - **Video Tutorials**: Stream educational video content with tracking
 - **Pricing Plans**: Multiple subscription tiers with different access levels
-- **Payment Processing**: Integrated payment systems (IntaSend and Paystack) for secure transactions
+- **Payment Processing**: Integrated Mpesa STK Push for secure mobile payments in Kenya
 - **Admin Dashboard**: Complete content management system for resources, videos, and blog posts
 - **Authentication**: Secure user authentication with role-based access (admin-only system)
 - **Responsive Design**: Modern UI built with Tailwind CSS and shadcn/ui components
@@ -20,7 +20,7 @@ A comprehensive tutoring platform built with Next.js that connects students with
 - **Framework**: Next.js 15 (App Router) with Turbopack
 - **Database**: PostgreSQL (Neon) with Prisma ORM
 - **Authentication**: NextAuth.js v4
-- **Payment Providers**: IntaSend and Paystack
+- **Payment Provider**: Mpesa STK Push (Safaricom Daraja API)
 - **Styling**: Tailwind CSS v4 + shadcn/ui components
 - **File Storage**: Cloudinary for media files
 - **Rich Text Editor**: Tiptap with custom extensions
@@ -33,10 +33,9 @@ A comprehensive tutoring platform built with Next.js that connects students with
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - PostgreSQL database (Neon recommended)
-- IntaSend account for payment processing
-- Paystack account for payment processing
+- Mpesa Daraja developer account for payment processing
 - Cloudinary account for file storage
 
 ### Environment Setup
@@ -61,15 +60,16 @@ DIRECT_URL="postgresql://user:password@host:port/database"
 NEXTAUTH_SECRET="your-secret-key"
 NEXTAUTH_URL="http://localhost:3000"
 
-# IntaSend Payment
-INTASEND_PUBLISHABLE_KEY="your-publishable-key"
-INTASEND_SECRET_KEY="your-secret-key"
-INTASEND_WEBHOOK_SECRET="your-webhook-secret"
-
-# Paystack Payment
-PAYSTACK_PUBLIC_KEY="your-public-key"
-PAYSTACK_SECRET_KEY="your-secret-key"
-PAYSTACK_WEBHOOK_SECRET="your-webhook-secret"
+# Mpesa Payment (Daraja API)
+MPESA_CONSUMER_KEY="your-consumer-key"
+MPESA_CONSUMER_SECRET="your-consumer-secret"
+MPESA_PASSKEY="your-passkey"
+MPESA_BUSINESS_SHORTCODE="your-business-shortcode"
+MPESA_TILL_NUMBER="your-till-number"
+MPESA_CALLBACK_URL="https://your-domain.com/api/mpesa/callback"
+MPESA_ENVIRONMENT="sandbox" # or "production"
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+MPESA_CURRENCY="KES"
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
@@ -110,8 +110,7 @@ src/
 │   ├── admin/             # Admin dashboard routes
 │   ├── api/               # API endpoints
 │   │   ├── auth/         # NextAuth authentication
-│   │   ├── intasend/     # IntaSend payment integration
-│   │   ├── paystack/     # Paystack payment integration
+│   │   ├── mpesa/        # Mpesa payment integration
 │   │   ├── resources/   # Resource download endpoints
 │   │   └── upload/       # File upload endpoint
 │   ├── about/            # About page
@@ -138,8 +137,7 @@ src/
 │   ├── auth.ts           # NextAuth configuration
 │   ├── db.ts             # Prisma client configuration
 │   ├── cloudinary.ts     # Cloudinary configuration
-│   ├── intasend.ts       # IntaSend integration
-│   ├── paystack.ts       # Paystack integration
+│   ├── mpesa.ts          # Mpesa integration
 │   └── types.ts          # TypeScript type definitions
 ├── data/                 # Static data and configurations
 │   ├── aboutData.ts      # About page content
@@ -159,24 +157,22 @@ prisma/
 
 ## Payment Integration
 
-This platform supports multiple payment providers for flexible payment processing:
+This platform uses Mpesa STK Push for mobile payments in Kenya:
 
-### IntaSend
-- **Resource Purchases**: One-time payments for downloadable content
-- **Subscription Plans**: Recurring payments for premium access
+### Mpesa STK Push
+- **Resource Purchases**: One-time payments for downloadable content via Mpesa
+- **Subscription Plans**: Pay for tutoring sessions using Mpesa
+- **STK Push**: Payment prompt sent directly to customer's phone
 - **Webhook Processing**: Automatic payment verification and access granting
-
-### Paystack
-- **Alternative Payment Option**: Additional payment gateway for users
-- **Transaction Initialization**: Secure checkout flow
-- **Webhook Verification**: Payment confirmation and access control
+- **Transaction Type**: Supports both Paybill and Till Number payments
 
 ### Payment Flow
 
-1. User initiates payment via checkout (IntaSend or Paystack)
-2. Payment metadata is stored temporarily in database
-3. Payment provider processes payment and sends webhook confirmation
-4. System verifies payment and grants access (downloads or plan activation)
+1. User enters phone number and initiates payment
+2. System sends STK push request to Mpesa API
+3. User receives Mpesa prompt on phone and enters PIN
+4. Mpesa processes payment and sends callback webhook
+5. System verifies payment and grants access (downloads or plan activation)
 
 ### Webhook Testing
 
@@ -235,8 +231,7 @@ This will run Prisma migrations and build the Next.js application.
 The project includes additional setup guides:
 
 - `CLOUDINARY_SETUP.md` - Detailed Cloudinary configuration instructions
-- `PAYSTACK_SETUP.md` - Paystack integration setup guide
-- `webhook-testing-guide.md` - Webhook testing with ngrok
+- `webhook-testing-guide.md` - Webhook testing with ngrok for Mpesa callbacks
 - `env-migration-guide.txt` - Environment variable migration guide
 
 ## Troubleshooting
