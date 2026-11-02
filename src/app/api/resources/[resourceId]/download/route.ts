@@ -107,12 +107,13 @@ export async function POST(
     await incrementDownloadCount(resourceId);
     
     // Fetch the file from Cloudinary
+    console.log("Fetching file from:", resource.fileUrl);
     const fileResponse = await fetch(resource.fileUrl);
-    
+
     if (!fileResponse.ok) {
-      console.error("Failed to fetch file from Cloudinary:", fileResponse.statusText);
+      console.error("Failed to fetch file from Cloudinary:", fileResponse.statusText, fileResponse.status);
       return NextResponse.json(
-        { error: "Failed to fetch file from storage" },
+        { error: `Failed to fetch file from storage: ${fileResponse.statusText}` },
         { status: 500 }
       );
     }

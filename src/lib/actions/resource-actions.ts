@@ -147,7 +147,22 @@ export async function getResource(id: string) {
   try {
     // Fetch resource directly from database
     const resource = await prisma.resource.findUnique({
-      where: { id }
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        fileUrl: true,
+        fileType: true,
+        fileSize: true,
+        isPaid: true,
+        price: true,
+        category: true,
+        thumbnailUrl: true,
+        downloads: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
 
     if (!resource) {

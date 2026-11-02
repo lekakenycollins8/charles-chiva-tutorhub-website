@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { getResource, incrementDownloadCount } from "@/lib/actions/resource-actions";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowLeft, Download, FileText } from "lucide-react";
+import { ArrowLeft, Download, FileText, Calendar, HardDrive, Eye, Tag } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DownloadButton from "@/components/resources/DownloadButton";
 import { Metadata } from "next";
+import { getCategoryGradient } from "@/lib/constants/resource-categories";
 
 // Generate dynamic metadata for resource pages
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -66,92 +69,111 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
   };
   
   return (
-    <div className="bg-gray-50 min-h-screen py-16">
-      <div className="container mx-auto px-4">
-        <div className="mb-6">
-          <Link href="/resources" className="flex items-center text-blue-600 hover:text-blue-800">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4">
+          <Link href="/resources" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors">
             <ArrowLeft className="h-4 w-4 mr-2" />
             <span>Back to Resources</span>
           </Link>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-3xl">{resource.title}</CardTitle>
-                    <CardDescription className="mt-2">
-                      Added {formatDistanceToNow(new Date(resource.createdAt), { addSuffix: true })}
-                    </CardDescription>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-sm font-semibold ${resource.isPaid ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Thumbnail / Hero Image */}
+            {resource.thumbnailUrl && (
+              <div className="relative rounded-2xl overflow-hidden shadow-lg">
+                <img
+                  src={resource.thumbnailUrl}
+                  alt={resource.title}
+                  className="w-full h-64 md:h-80 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <Badge
+                    className={`text-white border-0 ${resource.isPaid ? 'bg-blue-600' : 'bg-green-600'}`}
+                  >
                     {resource.isPaid ? `KSh ${resource.price?.toLocaleString() || '0'}` : 'Free'}
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            {/* Title and Basic Info */}
+            <Card className="border-0 shadow-md">
+              <CardHeader>
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                        {resource.title}
+                      </h1>
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                        <Badge variant="outline" className="bg-white">
+                          {resource.category}
+                        </Badge>
+                        <span>•</span>
+                        <span className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {formatDistanceToNow(new Date(resource.createdAt), { addSuffix: true })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Description */}
                 <div>
-                  <h3 className="text-lg font-medium mb-2">Description</h3>
-                  <p className="text-gray-700">{resource.description}</p>
+                  <h2 className="text-lg font-semibold mb-3 text-gray-900">About this resource</h2>
+                  <p className="text-gray-700 leading-relaxed">{resource.description}</p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Category</h3>
-                    <p className="mt-1">{resource.category}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">File Type</h3>
-                    <p className="mt-1">{resource.fileType}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">File Size</h3>
-                    <p className="mt-1">{formatFileSize(resource.fileSize)}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Downloads</h3>
-                    <p className="mt-1">{resource.downloads || 0}</p>
+
+                <Separator />
+
+                {/* Resource Details */}
+                <div>
+                  <h2 className="text-lg font-semibold mb-4 text-gray-900">Resource Details</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center text-gray-500 mb-1">
+                        <Tag className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Category</span>
+                      </div>
+                      <p className="font-medium text-gray-900">{resource.category}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center text-gray-500 mb-1">
+                        <FileText className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Type</span>
+                      </div>
+                      <p className="font-medium text-gray-900">{resource.fileType}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center text-gray-500 mb-1">
+                        <HardDrive className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Size</span>
+                      </div>
+                      <p className="font-medium text-gray-900">{formatFileSize(resource.fileSize)}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center text-gray-500 mb-1">
+                        <Eye className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Downloads</span>
+                      </div>
+                      <p className="font-medium text-gray-900">{resource.downloads || 0}</p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-              <CardFooter className="border-t pt-6">
-                <DownloadButton 
-                  fileUrl={resource.fileUrl}
-                  resourceId={resource.id}
-                  isPaid={resource.isPaid}
-                  price={resource.price}
-                  className="w-full"
-                />
-              </CardFooter>
-            </Card>
-          </div>
-          
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Resource Preview</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center py-6">
-                {resource.thumbnailUrl ? (
-                  <div className="w-full mb-4">
-                    <img
-                      src={resource.thumbnailUrl}
-                      alt={resource.title}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                    <FileText className="h-12 w-12 text-blue-600" />
-                  </div>
-                )}
-                <h3 className="font-medium text-center">{resource.title}</h3>
-                <p className="text-sm text-gray-500 text-center mt-1">{resource.fileType}</p>
-              </CardContent>
-              {!resource.isPaid && (
-                <CardFooter className="border-t pt-6">
+
+                <Separator />
+
+                {/* Download Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
                   <DownloadButton
                     fileUrl={resource.fileUrl}
                     resourceId={resource.id}
@@ -159,18 +181,63 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                     price={resource.price}
                     className="w-full"
                   />
-                </CardFooter>
-              )}
+                </div>
+              </CardContent>
             </Card>
-            
-            <Card className="mt-6">
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Preview Card */}
+            <Card className="border-0 shadow-md">
               <CardHeader>
-                <CardTitle>Related Resources</CardTitle>
+                <CardTitle className="text-lg">Quick Preview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {resource.thumbnailUrl ? (
+                  <div className="rounded-lg overflow-hidden">
+                    <img
+                      src={resource.thumbnailUrl}
+                      alt={resource.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                    <FileText className="h-16 w-16 text-blue-600" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-900">{resource.title}</p>
+                  <p className="text-sm text-gray-600">{resource.fileType}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Category Card */}
+            <Card className="border-0 shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg">Category</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-500">
-                  Coming soon! Related resources will be displayed here.
-                </p>
+                <Link href={`/resources?category=${encodeURIComponent(resource.category)}`}>
+                  <div className={`rounded-lg p-4 bg-gradient-to-br ${getCategoryGradient(resource.category)} text-white cursor-pointer hover:opacity-90 transition-opacity`}>
+                    <p className="font-semibold">{resource.category}</p>
+                    <p className="text-sm text-white/80 mt-1">View more in this category</p>
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Tips Card */}
+            <Card className="border-0 shadow-md bg-blue-50">
+              <CardHeader>
+                <CardTitle className="text-lg text-blue-900">Tips</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-blue-800 space-y-2">
+                <p>• Download and save the file to your device</p>
+                <p>• Ensure you have the necessary software to open the file</p>
+                <p>• Contact support if you encounter any issues</p>
               </CardContent>
             </Card>
           </div>
