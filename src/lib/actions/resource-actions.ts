@@ -103,9 +103,15 @@ export async function getResources(filters: ResourceFilters = {}) {
     // Optionally include counts for free/paid resources
     let counts;
     if (filters.includeCounts) {
+      // Build the where clause for counts (same as the main query)
+      const countWhere: any = {};
+      if (filters.category) {
+        countWhere.category = filters.category;
+      }
+
       const [freeCount, paidCount] = await Promise.all([
-        prisma.resource.count({ where: { isPaid: false } }),
-        prisma.resource.count({ where: { isPaid: true } })
+        prisma.resource.count({ where: { ...countWhere, isPaid: false } }),
+        prisma.resource.count({ where: { ...countWhere, isPaid: true } })
       ]);
       counts = {
         all: freeCount + paidCount,
