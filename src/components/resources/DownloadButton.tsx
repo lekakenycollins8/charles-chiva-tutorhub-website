@@ -195,20 +195,26 @@ export default function DownloadButton({
   const performDownload = async () => {
     setLoading(true);
     try {
-      const token = (typeof window !== 'undefined' && window.localStorage) 
-        ? localStorage.getItem(`download-token-${resourceId}`) 
+      const token = (typeof window !== 'undefined' && window.localStorage)
+        ? localStorage.getItem(`download-token-${resourceId}`)
         : null;
       const downloadUrl = `/api/resources/${resourceId}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
-      
+
+      console.log('Initiating download from:', downloadUrl);
+
       const downloadResponse = await fetch(downloadUrl, {
         method: 'POST',
         credentials: 'include'
       });
-      
+
+      console.log('Download response status:', downloadResponse.status);
+      console.log('Download response ok:', downloadResponse.ok);
+
       if (downloadResponse.ok) {
         // Check if response is JSON (error) or binary (file)
         const contentType = downloadResponse.headers.get('content-type');
-        
+        console.log('Content-Type:', contentType);
+
         if (contentType && contentType.includes('application/json')) {
           // Error response
           const error = await downloadResponse.json();
@@ -219,32 +225,40 @@ export default function DownloadButton({
           }
           return;
         }
-        
+
         // File response - create blob and download
         const blob = await downloadResponse.blob();
-        
+        console.log('Blob created, size:', blob.size, 'bytes');
+
         // Get filename from Content-Disposition header or use default
         const contentDisposition = downloadResponse.headers.get('content-disposition');
         let fileName = 'download.pdf';
-        
+
         if (contentDisposition) {
           const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
           if (filenameMatch && filenameMatch[1]) {
             fileName = filenameMatch[1];
           }
         }
-        
+
+        console.log('Filename:', fileName);
+
         const blobUrl = window.URL.createObjectURL(blob);
+        console.log('Blob URL created:', blobUrl);
+
         const a = document.createElement('a');
         a.href = blobUrl;
         a.download = fileName;
         a.style.display = 'none';
         document.body.appendChild(a);
+
+        console.log('Triggering download click');
         a.click();
-        
+
         setTimeout(() => {
           document.body.removeChild(a);
           window.URL.revokeObjectURL(blobUrl);
+          console.log('Cleanup complete');
         }, 100);
       } else {
         const error = await downloadResponse.json();
