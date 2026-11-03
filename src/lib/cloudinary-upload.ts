@@ -26,11 +26,6 @@ export async function uploadToCloudinary(
     throw new Error('Cloudinary upload preset is not configured');
   }
 
-  // Determine folder and resource type based on file type
-  const folder = fileType === 'video' ? 'tutorhub-videos' :
-                 fileType === 'document' ? 'tutorhub-documents' :
-                 'tutorhub-images';
-
   // Determine Cloudinary resource type
   const resourceType = fileType === 'video' ? 'video' :
                        fileType === 'document' ? 'raw' :
@@ -40,8 +35,10 @@ export async function uploadToCloudinary(
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
-  formData.append('folder', folder);
+  // Don't send folder - let the preset's folder setting handle it
   formData.append('public_id', `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
+  formData.append('use_filename', 'true'); // Use original filename
+  formData.append('overwrite', 'true'); // Overwrite if exists
 
   // Upload to Cloudinary with correct resource type (determined by URL endpoint)
   const response = await fetch(
