@@ -108,20 +108,19 @@ export async function POST(
     await incrementDownloadCount(resourceId);
 
     // Extract public_id from Cloudinary URL
-    // URL format: https://res.cloudinary.com/{cloud_name}/{resource_type}/upload/v{version}/{folder}/{public_id}.{ext}
+    // URL format: https://res.cloudinary.com/{cloud_name}/auto/upload/v{version}/{folder}/{public_id}.{ext}
     const urlParts = resource.fileUrl.split('/');
     const publicIdWithExt = urlParts[urlParts.length - 1];
     const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
-    const resourceType = urlParts[urlParts.length - 3]; // 'raw', 'image', or 'video'
 
     console.log("Downloading with Cloudinary SDK");
     console.log("Public ID:", publicId);
-    console.log("Resource type:", resourceType);
+    console.log("Original URL:", resource.fileUrl);
 
     // Use Cloudinary SDK to download with authentication
     try {
+      // Generate authenticated URL without specifying resource_type (let Cloudinary auto-detect)
       const result = await cloudinary.url(publicId, {
-        resource_type: resourceType,
         secure: true,
         transformation: [
           { fetch_format: 'auto' }
