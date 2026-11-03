@@ -42,10 +42,8 @@ export async function uploadToCloudinary(
   formData.append('upload_preset', uploadPreset);
   formData.append('folder', folder);
   formData.append('public_id', `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
-  formData.append('resource_type', resourceType);
-  formData.append('type', 'upload'); // Makes the file publicly accessible
 
-  // Upload to Cloudinary with correct resource type
+  // Upload to Cloudinary with correct resource type (determined by URL endpoint)
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
     {
