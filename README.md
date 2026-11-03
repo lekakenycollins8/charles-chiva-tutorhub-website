@@ -5,6 +5,11 @@ A comprehensive tutoring platform built with Next.js that connects students with
 ## Features
 
 - **Resource Management**: Browse and download educational materials with secure access control
+  - 12 organized categories (CPA Notes, KCSE Revision Notes, IGCSE Notes, CBE/CBC Notes, IELTS Study Materials, Mathematics, Chemistry, Physics, Biology, Questions & Answers Booklets, Accounting, Other)
+  - Category-based browsing with visual cards
+  - Thumbnail preview images for all resources
+  - Free and paid resource options
+  - Download tracking and analytics
 - **Video Tutorials**: Stream educational video content with tracking
 - **Pricing Plans**: Multiple subscription tiers with different access levels
 - **Payment Processing**: Integrated Mpesa STK Push for secure mobile payments in Kenya
@@ -13,7 +18,7 @@ A comprehensive tutoring platform built with Next.js that connects students with
 - **Responsive Design**: Modern UI built with Tailwind CSS and shadcn/ui components
 - **Blog System**: Content management for educational articles and announcements with rich text editing
 - **Contact Management**: Contact form submission tracking and management
-- **File Upload**: Cloudinary integration for media file storage
+- **File Upload**: Direct Cloudinary upload for large files (bypasses server size limits)
 
 ## Tech Stack
 
@@ -37,6 +42,7 @@ A comprehensive tutoring platform built with Next.js that connects students with
 - PostgreSQL database (Neon recommended)
 - Mpesa Daraja developer account for payment processing
 - Cloudinary account for file storage
+- Create an unsigned upload preset in Cloudinary dashboard for direct file uploads
 
 ### Environment Setup
 
@@ -75,15 +81,26 @@ MPESA_CURRENCY="KES"
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="your-unsigned-upload-preset"
 ```
 
-3. Set up the database:
+3. **Create Cloudinary Unsigned Upload Preset**:
+   - Go to Cloudinary Dashboard → Settings → Upload
+   - Click "Add upload preset"
+   - Name: Set to match `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` value
+   - Mode: Unsigned
+   - Allowed formats: Select appropriate formats (pdf, docx, xlsx, pptx, jpg, png, etc.)
+   - Max file size: Set to your preferred limit (e.g., 100MB)
+   - Click "Save"
+
+4. Set up the database:
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
-4. Seed the database (optional):
+5. Seed the database (optional):
 ```bash
 npm run db:seed
 ```
