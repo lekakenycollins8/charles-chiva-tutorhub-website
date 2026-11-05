@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getResource, incrementDownloadCount } from "@/lib/actions/resource-actions";
 import { verifyDownloadToken } from "@/lib/auth-utils";
-import cloudinary from "@/lib/cloudinary";
 
 // Detect MIME type from file content (magic numbers)
 function detectMimeType(buffer: ArrayBuffer): string {
@@ -107,82 +106,42 @@ export async function POST(
     // Increment download count for both free and paid resources
     await incrementDownloadCount(resourceId);
 
-    // Extract public_id from Cloudinary URL
-    // URL format: https://res.cloudinary.com/{cloud_name}/auto/upload/v{version}/{folder}/{public_id}.{ext}
-    const urlParts = resource.fileUrl.split('/');
-    const publicIdWithExt = urlParts[urlParts.length - 1];
-    const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
+    // The stored secure_url is already the correct delivery URL
+    const fileResponse = await fetch(resource.fileUrl);
 
-    console.log("Downloading with Cloudinary SDK");
-    console.log("Public ID:", publicId);
-    console.log("Original URL:", resource.fileUrl);
+    if (!fileResponse.ok) {
+      console.error("Cloudinary fetch failed:", fileResponse.status, fileResponse.statusText);
+      return NextResponse.json(
+        { error: `Failed to fetch file from storage (${fileResponse.status})` },
+        { status: 502 }
+      );
+    }
 
-    // Use Cloudinary SDK to download with authentication
-    try {
-      // Generate authenticated URL without specifying resource_type (let Cloudinary auto-detect)
-      const result = await cloudinary.url(publicId, {
-        secure: true,
-        transformation: [
-          { fetch_format: 'auto' }
-        ]
-      });
-
-      console.log("Cloudinary URL generated:", result);
-
-      // Fetch the file using the authenticated URL
-      const fileResponse = await fetch(result);
-
-      if (!fileResponse.ok) {
-        console.error("Failed to fetch file from Cloudinary:", fileResponse.statusText, fileResponse.status);
-        return NextResponse.json(
-          { error: `Failed to fetch file from storage: ${fileResponse.statusText}` },
-          { status: 500 }
-        );
-      }
-
-      // Get the file content as buffer
-      const fileBuffer = await fileResponse.arrayBuffer();
-
-      // Detect MIME type from actual file content (more reliable than fileType)
-      const detectedMimeType = detectMimeType(fileBuffer);
-
-      // Fallback to fileType-based MIME type if detection fails
-      const mimeType = detectedMimeType !== 'application/octet-stream'
+    const fileBuffer = await fileResponse.arrayBuffer();
+    const detectedMimeType = detectMimeType(fileBuffer);
+    const mimeType =
+      detectedMimeType !== 'application/octet-stream'
         ? detectedMimeType
         : getMimeType(resource.fileType);
 
-      // Determine file extension based on detected MIME type
-      let fileExtension = getFileExtension(resource.fileType);
-      if (detectedMimeType === 'application/pdf') {
-        fileExtension = '.pdf';
-      } else if (detectedMimeType.includes('wordprocessingml')) {
-        fileExtension = '.docx';
-      } else if (detectedMimeType.includes('presentationml')) {
-        fileExtension = '.pptx';
-      } else if (detectedMimeType.includes('spreadsheetml')) {
-        fileExtension = '.xlsx';
-      }
+    let fileExtension = getFileExtension(resource.fileType);
+    if (detectedMimeType === 'application/pdf') fileExtension = '.pdf';
+    else if (detectedMimeType.includes('wordprocessingml')) fileExtension = '.docx';
+    else if (detectedMimeType.includes('presentationml')) fileExtension = '.pptx';
+    else if (detectedMimeType.includes('spreadsheetml')) fileExtension = '.xlsx';
 
-      const sanitizedTitle = resource.title.replace(/[^a-zA-Z0-9]/g, '_');
-      const fileName = `${sanitizedTitle}${fileExtension}`;
+    const fileName = `${resource.title.replace(/[^a-zA-Z0-9]/g, '_')}${fileExtension}`;
 
-      // Return the file with proper headers
-      return new NextResponse(fileBuffer, {
-        status: 200,
-        headers: {
-          'Content-Type': mimeType,
-          'Content-Disposition': `attachment; filename="${fileName}"`,
-          'Content-Length': fileBuffer.byteLength.toString(),
-          'Cache-Control': 'public, max-age=31536000',
-        },
-      });
-    } catch (sdkError) {
-      console.error("Cloudinary SDK error:", sdkError);
-      return NextResponse.json(
-        { error: `Failed to generate download URL: ${sdkError instanceof Error ? sdkError.message : 'Unknown error'}` },
-        { status: 500 }
-      );
-    }
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': mimeType,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': fileBuffer.byteLength.toString(),
+        // paid files must not be cached by shared caches/CDNs
+        'Cache-Control': resource.isPaid ? 'private, no-store' : 'public, max-age=3600',
+      },
+    });
   } catch (error: any) {
     console.error("Download error:", error);
     return NextResponse.json(

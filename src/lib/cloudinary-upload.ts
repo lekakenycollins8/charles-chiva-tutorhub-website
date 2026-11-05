@@ -26,18 +26,19 @@ export async function uploadToCloudinary(
     throw new Error('Cloudinary upload preset is not configured');
   }
 
+  // Determine Cloudinary resource type endpoint
+  const resourceType = fileType === 'video' ? 'video' :
+                       fileType === 'document' ? 'raw' :
+                       'image';
+
   // Create FormData for Cloudinary upload
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
-  // Don't send folder - let the preset's folder setting handle it
-  formData.append('public_id', `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
-  formData.append('use_filename', 'true'); // Use original filename
-  formData.append('overwrite', 'true'); // Overwrite if exists
 
-  // Upload to Cloudinary using /auto/upload endpoint (auto-detects resource type)
+  // Upload to Cloudinary using the specific resource type endpoint
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
     {
       method: 'POST',
       body: formData,
