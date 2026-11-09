@@ -8,6 +8,7 @@ import { ArrowLeft, Download, FileText, Calendar, HardDrive, Eye, Tag } from "lu
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DownloadButton from "@/components/resources/DownloadButton";
+import { getActivePaymentProvider } from "@/lib/payment-config";
 import { Metadata } from "next";
 import { getCategoryGradient } from "@/lib/constants/resource-categories";
 
@@ -179,6 +180,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                     resourceId={resource.id}
                     isPaid={resource.isPaid}
                     price={resource.price}
+                    activeProvider={getActivePaymentProvider()}
                     className="w-full"
                   />
                 </div>

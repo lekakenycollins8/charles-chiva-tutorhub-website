@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import PricingSection from '@/components/pricing/PricingSection';
+import { getActivePaymentProvider } from '@/lib/payment-config';
 
 export const metadata: Metadata = {
   title: 'Affordable Tutoring Pricing | Flexible Plans | Chiva TutorHub',
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 export default function PricingPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
-      <PricingSection />
+      <PricingSection activeProvider={getActivePaymentProvider()} />
     </main>
   );
 }

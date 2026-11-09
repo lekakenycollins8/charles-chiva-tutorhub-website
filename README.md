@@ -66,6 +66,12 @@ DIRECT_URL="postgresql://user:password@host:port/database"
 NEXTAUTH_SECRET="your-secret-key"
 NEXTAUTH_URL="http://localhost:3000"
 
+# Payment provider (paystack or mpesa)
+ACTIVE_PAYMENT_PROVIDER="paystack"
+
+# Paystack Payment (hosted checkout)
+PAYSTACK_SECRET_KEY="your-paystack-secret-key"
+
 # Mpesa Payment (Daraja API)
 MPESA_CONSUMER_KEY="your-consumer-key"
 MPESA_CONSUMER_SECRET="your-consumer-secret"
@@ -174,7 +180,13 @@ prisma/
 
 ## Payment Integration
 
-This platform uses Mpesa STK Push for mobile payments in Kenya:
+The active payment provider is controlled by `ACTIVE_PAYMENT_PROVIDER` (`paystack` or `mpesa`). Paystack uses hosted checkout redirects; M-Pesa uses STK Push for mobile payments in Kenya.
+
+### Paystack
+- **Pricing Plans**: Hosted Paystack checkout for tutoring plans
+- **Resource Purchases**: Hosted Paystack checkout for downloadable content
+- **Verification**: Server-side transaction verification plus webhook processing
+- **Downloads**: Paid resources issue a JWT download token after a completed payment
 
 ### Mpesa STK Push
 - **Resource Purchases**: One-time payments for downloadable content via Mpesa

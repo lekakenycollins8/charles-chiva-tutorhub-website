@@ -1,122 +1,68 @@
-# Paystack Payment Integration Setup
+# Paystack Payment Integration
 
-This document provides instructions for configuring Paystack payment integration in your application.
+Paystack is implemented as a hosted-checkout redirect flow for pricing plans and paid resource downloads.
 
 ## Environment Variables
 
-Add the following environment variables to your `.env.local` file:
+Add these to `.env.local` / deployment env:
 
 ```bash
-# Paystack Configuration
-PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Active payment provider: paystack or mpesa
+ACTIVE_PAYMENT_PROVIDER=paystack
+
+# Paystack secret key (server-side only)
 PAYSTACK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Base URL used for Paystack callback redirects and webhook testing
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
 
-## Getting Paystack API Keys
-
-1. **Sign up for Paystack**: Go to [https://paystack.com](https://paystack.com) and create an account
-2. **Navigate to Settings**: Go to Settings → API Keys
-3. **Copy your keys**: You'll see both test and live keys
-   - Use **Test keys** for development
-   - Use **Live keys** for production
-
-## Currency Configuration
-
-The application defaults to **USD**. To use a different currency, add it to your `.env.local` file:
-
-```bash
-PAYSTACK_CURRENCY=USD
-```
-
-Paystack supports the following currencies depending on your account type:
-- NGN (Nigerian Naira)
-- GHS (Ghanaian Cedis)
-- KES (Kenyan Shilling)
-- ZAR (South African Rand)
-- USD (US Dollars)
-
-**Important**: Ensure your Paystack merchant account has the currency enabled. If you receive a "Currency not supported by merchant" error:
-1. Check your Paystack dashboard to verify which currencies are enabled for your account
-2. Contact Paystack support if the currency should be enabled
-3. Use a currency that is already enabled on your account
-4. Update your pricing values in `src/data/pricing.ts` to match the currency
-
-## Webhook Configuration
-
-1. **Set up your webhook URL**: In Paystack dashboard, go to Settings → Webhooks
-2. **Add your webhook URL**: `https://your-domain.com/api/paystack/webhook`
-3. **Select events**: Enable the following events:
-   - `charge.success` - For successful payments
-   - `charge.failed` - For failed payments (optional)
-
-## Testing
-
-### Test Mode
-Paystack provides test mode with the following test card details:
-- **Card Number**: `4084 0840 4084 0840`
-- **Expiry**: Any future date (e.g., 12/25)
-- **CVV**: Any 3-digit number (e.g., 123)
-- **PIN**: Any 4-digit number (e.g., 1234)
-
-### Test Scenarios
-- **Successful payment**: Use valid test card details
-- **Failed payment**: Use card number `4084 0840 4084 0841`
-- **Insufficient funds**: Use card number `4084 0840 4084 0842`
+Notes:
+- Use `sk_test_...` for testing and `sk_live_...` for production.
+- Currency is fixed to `KES` in code; no `PAYSTACK_CURRENCY` env is required.
+- No separate webhook signing secret is required; webhooks are verified with `PAYSTACK_SECRET_KEY` via `x-paystack-signature`.
+- Hosted redirect does not require `PAYSTACK_PUBLIC_KEY` or the inline popup SDK.
 
 ## API Endpoints
 
-The following Paystack API endpoints are implemented:
+- `POST /api/paystack/transaction/initialize` — creates a Paystack checkout session for `type: "plan"` or `type: "resource"` and returns `authorizationUrl`.
+- `GET /api/paystack/transaction/verify?reference=...` — verifies a transaction with Paystack and completes the local payment record.
+- `POST /api/paystack/webhook` — handles Paystack webhook events, currently `charge.success` and `charge.failed`.
+- `POST /api/resources/[resourceId]/download-token` — issues a JWT download token after a completed payment is found.
 
-- **Initialize Transaction**: `POST /api/paystack/transaction/initialize`
-- **Verify Transaction**: `POST /api/paystack/transaction/verify`
-- **Webhook Handler**: `POST /api/paystack/webhook`
+## Callback URLs
 
-## Pricing
+The initialize route sets per-transaction callback URLs:
 
-Current pricing plans (in KES):
-- **Basic**: KES 1,300/hour
-- **Standard**: KES 5,200/week
-- **Premium**: KES 10,400/month
+- Plans: `/pricing/success?provider=paystack`
+- Resources: `/resources/[resourceId]?provider=paystack`
 
-## Migration from IntaSend
+Paystack appends `reference=...` to the callback URL. The app must verify the reference server-side before granting access; visiting the callback URL alone is not proof of payment.
 
-If you're migrating from IntaSend:
-1. Update environment variables (replace IntaSend keys with Paystack keys)
-2. The database schema remains compatible
-3. Existing payment records will continue to work
-4. Webhook handling has been updated for Paystack's event structure
+## Webhook Setup
 
-## Troubleshooting
+1. In the Paystack dashboard, add webhook URL: `https://your-domain.com/api/paystack/webhook`
+2. Subscribe to `charge.success` and optionally `charge.failed`.
+3. For local testing, expose the app with ngrok and set `NEXT_PUBLIC_SITE_URL` to the ngrok URL, then use `https://<ngrok-url>/api/paystack/webhook` in Paystack test mode.
 
-### Webhook Not Receiving Events
-- Ensure your webhook URL is publicly accessible
-- Check Paystack dashboard for webhook delivery logs
-- Verify your secret key matches the one in Paystack dashboard
+The webhook route reads the raw request body and verifies `x-paystack-signature` using `PAYSTACK_SECRET_KEY` before processing.
 
-### Transaction Verification Fails
-- Ensure the reference is valid
-- Check that the transaction was successful in Paystack dashboard
-- Verify your secret key is correct
+## Testing
 
-### Currency Issues
-- Ensure `PAYSTACK_CURRENCY` matches your Paystack account's default currency
-- Paystack may restrict certain currencies based on your account type
+Paystack test card:
 
-## Security Notes
+- Card: `4084 0840 4084 0840`
+- Expiry: any future date
+- CVV: any 3 digits
+- PIN/OTP: follow the test checkout prompts
 
-- Never commit your secret keys to version control
-- Use environment variables for all sensitive data
-- Enable webhook signature verification in production
-- Regularly rotate your API keys
+Test both flows:
 
-## Support
+1. Pricing plan purchase → should create a completed `Payment` and show `/pricing/success`.
+2. Paid resource purchase → should create a completed `Payment` with `resourceId`, issue a download JWT, and download the file.
 
-For Paystack-specific issues:
-- Paystack Documentation: https://paystack.com/docs
-- Paystack Support: support@paystack.co
-- Paystack Twitter: @paystack
+## Switching Providers
 
-For integration issues:
-- Check the implementation in `/src/lib/paystack.ts`
-- Review API endpoints in `/src/app/api/paystack/`
-- Check webhook handler in `/src/app/api/paystack/webhook/route.ts`
+- `ACTIVE_PAYMENT_PROVIDER=paystack` shows Paystack checkout only.
+- `ACTIVE_PAYMENT_PROVIDER=mpesa` shows the existing M-Pesa STK flow only.
+- M-Pesa credentials remain configured with the existing `MPESA_*` variables when re-enabled.

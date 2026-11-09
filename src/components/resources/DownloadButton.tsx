@@ -1,8 +1,9 @@
 'use client';
 
-import { Download, Smartphone } from "lucide-react";
+import { Download, Smartphone, CreditCard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import type { PaymentProvider } from "@/lib/payment-config";
 
 interface DownloadButtonProps {
   fileUrl: string;
@@ -11,186 +12,28 @@ interface DownloadButtonProps {
   isPaid: boolean;
   price?: number | null;
   userEmail?: string;
+  activeProvider: PaymentProvider;
 }
 
 export default function DownloadButton({
-  fileUrl,
   className,
   resourceId,
   isPaid,
   price,
-  userEmail
+  userEmail,
+  activeProvider
 }: DownloadButtonProps) {
   const [loading, setLoading] = useState(false);
   const [hasValidToken, setHasValidToken] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(userEmail || "");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<"idle" | "sent" | "success" | "error">("idle");
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "sent" | "redirecting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
-
-  useEffect(() => {
-    // Only run in browser environment
-    if (typeof window === 'undefined') return;
-
-    // Check for token in URL on component mount
-    const reference = searchParams.get('reference');
-
-    // Handle Mpesa success (reference)
-    if (reference) {
-      // Verify the Mpesa transaction and get download token
-      verifyAndStoreToken(reference);
-      return;
-    }
-
-    // Check for existing token in localStorage
-    if (typeof window !== 'undefined' && window.localStorage && localStorage.getItem(`download-token-${resourceId}`)) {
-      setHasValidToken(true);
-    }
-  }, [resourceId, searchParams, router]);
-
-  const handleDownload = async () => {
-    if (isPaid && !hasValidToken) {
-      // Show customer form for paid resources
-      if (!showCustomerForm) {
-        setShowCustomerForm(true);
-        return;
-      }
-
-      if (!phoneNumber || !email || !firstName || !lastName) {
-        setErrorMessage('Please fill in all customer information fields.');
-        return;
-      }
-
-      // Basic phone number validation
-      const phoneRegex = /^(07|01|\+2547|2547)\d{7,8}$/;
-      if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
-        setErrorMessage('Please enter a valid Kenyan phone number (e.g., 07XX XXX XXX or 2547XX XXX XXX)');
-        return;
-      }
-
-      // Initiate Mpesa STK push for paid resources
-      setLoading(true);
-      setErrorMessage("");
-      setPaymentStatus("sent");
-
-      try {
-        const createRes = await fetch('/api/mpesa/stkpush/initiate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'resource',
-            resourceId,
-            phoneNumber,
-            email,
-            firstName,
-            lastName
-          }),
-        });
-
-        if (!createRes.ok) {
-          const errorData = await createRes.json();
-          throw new Error(errorData.error || 'Failed to initiate Mpesa payment');
-        }
-
-        const data = await createRes.json();
-        console.log('Mpesa STK push initiated:', data);
-
-        // Poll for payment status
-        pollPaymentStatus(data.checkoutRequestID);
-      } catch (error: any) {
-        console.error('Checkout error:', error);
-        setErrorMessage(error.message || 'Failed to initiate payment. Please try again.');
-        setPaymentStatus("error");
-        setLoading(false);
-      }
-    } else {
-      // Handle download for both free and purchased resources
-      await performDownload();
-    }
-  };
-
-  const pollPaymentStatus = async (checkoutRequestID: string) => {
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
-    let attempts = 0;
-
-    const poll = async () => {
-      if (attempts >= maxAttempts) {
-        setPaymentStatus("error");
-        setErrorMessage("Payment timed out. Please check your phone and try again.");
-        setLoading(false);
-        return;
-      }
-
-      attempts++;
-
-      try {
-        const response = await fetch(`/api/mpesa/status/${checkoutRequestID}`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Payment status:', data);
-
-          if (data.paymentRecord?.status === "COMPLETED") {
-            setPaymentStatus("success");
-            // Generate download token and start download
-            await verifyAndStoreToken(checkoutRequestID);
-            return;
-          }
-
-          if (data.paymentRecord?.status === "FAILED") {
-            setPaymentStatus("error");
-            setErrorMessage("Payment failed. Please try again.");
-            setLoading(false);
-            return;
-          }
-
-          // Continue polling
-          setTimeout(poll, 5000);
-        }
-      } catch (error) {
-        console.error('Error polling payment status:', error);
-        // Continue polling despite errors
-        setTimeout(poll, 5000);
-      }
-    };
-
-    poll();
-  };
-
-  const verifyAndStoreToken = async (reference: string) => {
-    setLoading(true);
-    try {
-      // Check if payment was successful
-      const statusRes = await fetch(`/api/mpesa/status/${reference}`);
-      if (statusRes.ok) {
-        const data = await statusRes.json();
-        if (data.paymentRecord?.status === "COMPLETED") {
-          // Generate download token (simplified - in production, you'd call a proper token generation endpoint)
-          const downloadToken = `${resourceId}-${Date.now()}`;
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem(`download-token-${resourceId}`, downloadToken);
-          }
-          setHasValidToken(true);
-
-          // Clean up URL params
-          const url = new URL(window.location.href);
-          url.searchParams.delete('reference');
-          window.history.replaceState({}, '', url.toString());
-
-          // Start download
-          await performDownload();
-        }
-      }
-    } catch (error) {
-      console.error('Verification error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const performDownload = async () => {
     setLoading(true);
@@ -200,23 +43,15 @@ export default function DownloadButton({
         : null;
       const downloadUrl = `/api/resources/${resourceId}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
-      console.log('Initiating download from:', downloadUrl);
-
       const downloadResponse = await fetch(downloadUrl, {
         method: 'POST',
         credentials: 'include'
       });
 
-      console.log('Download response status:', downloadResponse.status);
-      console.log('Download response ok:', downloadResponse.ok);
-
       if (downloadResponse.ok) {
-        // Check if response is JSON (error) or binary (file)
         const contentType = downloadResponse.headers.get('content-type');
-        console.log('Content-Type:', contentType);
 
         if (contentType && contentType.includes('application/json')) {
-          // Error response
           const error = await downloadResponse.json();
           console.error('Download error:', error);
           if (error.error?.includes('token') && typeof window !== 'undefined' && window.localStorage) {
@@ -226,11 +61,7 @@ export default function DownloadButton({
           return;
         }
 
-        // File response - create blob and download
         const blob = await downloadResponse.blob();
-        console.log('Blob created, size:', blob.size, 'bytes');
-
-        // Get filename from Content-Disposition header or use default
         const contentDisposition = downloadResponse.headers.get('content-disposition');
         let fileName = 'download.pdf';
 
@@ -241,24 +72,17 @@ export default function DownloadButton({
           }
         }
 
-        console.log('Filename:', fileName);
-
         const blobUrl = window.URL.createObjectURL(blob);
-        console.log('Blob URL created:', blobUrl);
-
         const a = document.createElement('a');
         a.href = blobUrl;
         a.download = fileName;
         a.style.display = 'none';
         document.body.appendChild(a);
-
-        console.log('Triggering download click');
         a.click();
 
         setTimeout(() => {
           document.body.removeChild(a);
           window.URL.revokeObjectURL(blobUrl);
-          console.log('Cleanup complete');
         }, 100);
       } else {
         const error = await downloadResponse.json();
@@ -275,24 +99,246 @@ export default function DownloadButton({
     }
   };
 
+  const issueDownloadToken = async (reference: string, provider: PaymentProvider) => {
+    const tokenResponse = await fetch(`/api/resources/${resourceId}/download-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference, provider }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to authorize download');
+    }
+
+    const { token } = await tokenResponse.json();
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(`download-token-${resourceId}`, token);
+    }
+    setHasValidToken(true);
+  };
+
+  const completePaidDownload = async (reference: string, provider: PaymentProvider) => {
+    setLoading(true);
+    setErrorMessage("");
+    setPaymentStatus("success");
+
+    try {
+      let completed = false;
+
+      if (provider === "paystack") {
+        const verifyResponse = await fetch(`/api/paystack/transaction/verify?reference=${encodeURIComponent(reference)}`);
+        const verifyData = await verifyResponse.json().catch(() => ({}));
+        completed = verifyResponse.ok && verifyData.status === "success";
+        if (!completed) {
+          throw new Error(verifyData.message || "Payment was not successful");
+        }
+      } else {
+        const statusResponse = await fetch(`/api/mpesa/status/${encodeURIComponent(reference)}`);
+        const statusData = await statusResponse.json().catch(() => ({}));
+        completed = statusResponse.ok && statusData.paymentRecord?.status === "COMPLETED";
+        if (!completed) {
+          throw new Error("Payment is not complete yet");
+        }
+      }
+
+      await issueDownloadToken(reference, provider);
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete('reference');
+      url.searchParams.delete('provider');
+      window.history.replaceState({}, '', url.toString());
+
+      await performDownload();
+    } catch (error) {
+      console.error('Payment completion error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to authorize download. Please try again.');
+      setPaymentStatus("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pollMpesaPaymentStatus = async (checkoutRequestID: string) => {
+    const maxAttempts = 60;
+    let attempts = 0;
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        setPaymentStatus("error");
+        setErrorMessage("Payment timed out. Please check your phone and try again.");
+        setLoading(false);
+        return;
+      }
+
+      attempts++;
+
+      try {
+        const response = await fetch(`/api/mpesa/status/${checkoutRequestID}`);
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data.paymentRecord?.status === "COMPLETED") {
+            await completePaidDownload(checkoutRequestID, "mpesa");
+            return;
+          }
+
+          if (data.paymentRecord?.status === "FAILED") {
+            setPaymentStatus("error");
+            setErrorMessage("Payment failed. Please try again.");
+            setLoading(false);
+            return;
+          }
+
+          setTimeout(poll, 5000);
+        }
+      } catch (error) {
+        console.error('Error polling payment status:', error);
+        setTimeout(poll, 5000);
+      }
+    };
+
+    poll();
+  };
+
+  const initiateMpesaPayment = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    setPaymentStatus("sent");
+
+    try {
+      const createRes = await fetch('/api/mpesa/stkpush/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'resource',
+          resourceId,
+          phoneNumber,
+          email,
+          firstName,
+          lastName
+        }),
+      });
+
+      if (!createRes.ok) {
+        const errorData = await createRes.json();
+        throw new Error(errorData.error || 'Failed to initiate Mpesa payment');
+      }
+
+      const data = await createRes.json();
+      pollMpesaPaymentStatus(data.checkoutRequestID);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to initiate payment. Please try again.');
+      setPaymentStatus("error");
+      setLoading(false);
+    }
+  };
+
+  const initiatePaystackPayment = async () => {
+    setLoading(true);
+    setErrorMessage("");
+    setPaymentStatus("redirecting");
+
+    try {
+      const createRes = await fetch('/api/paystack/transaction/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'resource',
+          resourceId,
+          email,
+          firstName,
+          lastName
+        }),
+      });
+
+      const data = await createRes.json();
+      if (!createRes.ok) {
+        throw new Error(data.error || 'Failed to initialize Paystack payment');
+      }
+      if (!data.authorizationUrl) {
+        throw new Error('Paystack did not return a checkout URL');
+      }
+
+      window.location.href = data.authorizationUrl;
+    } catch (error) {
+      console.error('Paystack checkout error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to initialize payment. Please try again.');
+      setPaymentStatus("error");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const reference = searchParams.get('reference');
+    if (reference) {
+      const providerParam = searchParams.get('provider');
+      const provider = providerParam === 'mpesa' || providerParam === 'paystack' ? providerParam : activeProvider;
+      completePaidDownload(reference, provider);
+      return;
+    }
+
+    if (window.localStorage && localStorage.getItem(`download-token-${resourceId}`)) {
+      setHasValidToken(true);
+    }
+  }, [resourceId, searchParams, activeProvider]);
+
+  const handleDownload = async () => {
+    if (isPaid && !hasValidToken) {
+      if (!showCustomerForm) {
+        setShowCustomerForm(true);
+        return;
+      }
+
+      if (!email || !firstName || !lastName || (activeProvider === 'mpesa' && !phoneNumber)) {
+        setErrorMessage('Please fill in all required fields.');
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setErrorMessage('Please enter a valid email address.');
+        return;
+      }
+
+      if (activeProvider === 'mpesa') {
+        const phoneRegex = /^(07|01|\+2547|2547)\d{7,8}$/;
+        if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+          setErrorMessage('Please enter a valid Kenyan phone number (e.g., 07XX XXX XXX or 2547XX XXX XXX)');
+          return;
+        }
+        await initiateMpesaPayment();
+      } else {
+        await initiatePaystackPayment();
+      }
+    } else {
+      await performDownload();
+    }
+  };
+
   return (
     <div className="space-y-4">
       {showCustomerForm && (
         <div className="flex flex-col space-y-3">
-          <div>
-            <label className="text-sm font-medium">Phone Number *</label>
-            <div className="relative">
-              <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 mt-1" />
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="07XX XXX XXX"
-                className="mt-1 w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {activeProvider === 'mpesa' && (
+            <div>
+              <label className="text-sm font-medium">Phone Number *</label>
+              <div className="relative">
+                <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 mt-1" />
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="07XX XXX XXX"
+                  className="mt-1 w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Enter your Safaricom number to receive Mpesa prompt</p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Enter your Safaricom number to receive Mpesa prompt</p>
-          </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium">First Name *</label>
@@ -317,13 +363,21 @@ export default function DownloadButton({
           </div>
           <div>
             <label className="text-sm font-medium">Email Address *</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="john@example.com"
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              {activeProvider === 'paystack' && (
+                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 mt-1" />
+              )}
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                className={`mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${activeProvider === 'paystack' ? 'pl-10' : ''}`}
+              />
+            </div>
+            {activeProvider === 'paystack' && (
+              <p className="text-xs text-gray-500 mt-1">You will be redirected to Paystack to complete payment</p>
+            )}
           </div>
         </div>
       )}
@@ -340,6 +394,12 @@ export default function DownloadButton({
         </div>
       )}
 
+      {paymentStatus === "redirecting" && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
+          Redirecting to Paystack. Please complete your payment there.
+        </div>
+      )}
+
       {paymentStatus === "success" && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
           Payment successful! Starting download...
@@ -348,7 +408,7 @@ export default function DownloadButton({
 
       <button
         onClick={handleDownload}
-        disabled={loading || paymentStatus === "success"}
+        disabled={loading || paymentStatus === "success" || paymentStatus === "redirecting"}
         className={`inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${className}`}
       >
         {loading ? (
@@ -362,7 +422,7 @@ export default function DownloadButton({
         ) : (
           <>
             <Download className="-ml-1 mr-2 h-4 w-4" />
-            {isPaid && !hasValidToken ? (showCustomerForm ? `Pay KSh ${price?.toLocaleString() || '0'}` : `Pay KSh ${price?.toLocaleString() || '0'}`) : 'Download'}
+            {isPaid && !hasValidToken ? `Pay KSh ${price?.toLocaleString() || '0'}` : 'Download'}
           </>
         )}
       </button>

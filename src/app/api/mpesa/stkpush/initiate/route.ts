@@ -51,6 +51,10 @@ export async function POST(request: Request) {
         firstName,
         lastName,
         phoneNumber,
+        amount: total,
+        currency: CURRENCY,
+        paymentMethod: "mpesa",
+        provider: "mpesa",
       };
 
       const response = await initiateSTKPush({
@@ -120,6 +124,10 @@ export async function POST(request: Request) {
         firstName,
         lastName,
         phoneNumber,
+        amount: resource.price,
+        currency: CURRENCY,
+        paymentMethod: "mpesa",
+        provider: "mpesa",
       };
 
       const response = await initiateSTKPush({

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import PricingCTA from './PricingCTA';
 import MpesaPricingButton from './MpesaPricingButton';
+import PaystackPricingButton from './PaystackPricingButton';
+import type { PaymentProvider } from '@/lib/payment-config';
 import { motion } from 'framer-motion';
 
 const icons = {
@@ -35,7 +37,7 @@ const itemVariants = {
   }
 };
 
-export default function PricingSection() {
+export default function PricingSection({ activeProvider }: { activeProvider: PaymentProvider }) {
   return (
     <section className="relative min-h-screen overflow-hidden">
       {/* Background Elements */}
@@ -159,14 +161,25 @@ export default function PricingSection() {
                   </CardContent>
                   
                   <CardFooter className="pt-6 pb-8 px-8">
-                    <MpesaPricingButton
-                      plan={plan}
-                      className={`py-4 text-lg font-semibold transition-all duration-300 ${
-                        isPopular
-                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
-                          : ''
-                      }`}
-                    />
+                    {activeProvider === 'mpesa' ? (
+                      <MpesaPricingButton
+                        plan={plan}
+                        className={`py-4 text-lg font-semibold transition-all duration-300 ${
+                          isPopular
+                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                            : ''
+                        }`}
+                      />
+                    ) : (
+                      <PaystackPricingButton
+                        plan={plan}
+                        className={`py-4 text-lg font-semibold transition-all duration-300 ${
+                          isPopular
+                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                            : ''
+                        }`}
+                      />
+                    )}
                   </CardFooter>
                 </Card>
               </motion.div>

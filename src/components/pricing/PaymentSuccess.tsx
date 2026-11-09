@@ -16,21 +16,28 @@ export default function PaymentSuccess({ redirectPath = '/' }: PaymentSuccessPro
   const [message, setMessage] = useState('Verifying your payment...');
   
   const reference = searchParams.get('reference');
+  const provider = searchParams.get('provider') || 'paystack';
 
   useEffect(() => {
     const verifyPayment = async () => {
       if (reference) {
         try {
-          // Verify the payment with Paystack API
-          const response = await fetch(`/api/paystack/transaction/verify?reference=${reference}`);
+          const endpoint = provider === 'mpesa'
+            ? `/api/mpesa/status/${encodeURIComponent(reference)}`
+            : `/api/paystack/transaction/verify?reference=${encodeURIComponent(reference)}`;
+          const response = await fetch(endpoint);
           const data = await response.json();
 
-          if (response.ok && data.status === 'success') {
+          const isSuccess = provider === 'mpesa'
+            ? data.paymentRecord?.status === 'COMPLETED'
+            : data.status === 'success';
+
+          if (response.ok && isSuccess) {
             setStatus('success');
             setMessage('Your payment was successful! Thank you for your purchase.');
           } else {
             setStatus('error');
-            setMessage('Payment verification failed. Please contact support if you believe this is an error.');
+            setMessage(data.message || 'Payment verification failed. Please contact support if you believe this is an error.');
           }
         } catch (error) {
           console.error('Error verifying payment:', error);
@@ -44,7 +51,7 @@ export default function PaymentSuccess({ redirectPath = '/' }: PaymentSuccessPro
     };
 
     verifyPayment();
-  }, [reference]);
+  }, [reference, provider]);
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

@@ -139,7 +139,7 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
             setPaymentStatus("success");
             // Redirect to success page after a short delay
             setTimeout(() => {
-              window.location.href = `/pricing/success?reference=${checkoutRequestID}`;
+              window.location.href = `/pricing/success?provider=mpesa&reference=${checkoutRequestID}`;
             }, 2000);
             return;
           }

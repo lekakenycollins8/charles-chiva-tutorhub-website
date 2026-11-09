@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export async function storeCheckoutMetadata(checkoutId: string, invoiceId: string, metadata: any, email: string, amount: number, currency: string) {
+export async function storeCheckoutMetadata(checkoutId: string, invoiceId: string, metadata: any, email: string, amount: number, currency: string, paymentMethod: string = "mpesa") {
   try {
     const checkoutMetadata = await prisma.checkoutMetadata.create({
       data: {
@@ -11,6 +11,7 @@ export async function storeCheckoutMetadata(checkoutId: string, invoiceId: strin
         amount,
         currency,
         status: "PENDING",
+        paymentMethod,
       },
     });
     return checkoutMetadata;
@@ -41,6 +42,29 @@ export async function getCheckoutMetadata(checkoutId: string) {
     return checkoutMetadata?.metadata || null;
   } catch (error: any) {
     console.error("Error retrieving checkout metadata:", error);
+    return null;
+  }
+}
+
+export async function getCheckoutMetadataRecord(checkoutId: string) {
+  try {
+    let checkoutMetadata = await prisma.checkoutMetadata.findFirst({
+      where: {
+        checkoutId: checkoutId,
+      },
+    });
+
+    if (!checkoutMetadata) {
+      checkoutMetadata = await prisma.checkoutMetadata.findFirst({
+        where: {
+          invoiceId: checkoutId,
+        },
+      });
+    }
+
+    return checkoutMetadata || null;
+  } catch (error) {
+    console.error("Error retrieving checkout metadata record:", error);
     return null;
   }
 }
