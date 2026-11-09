@@ -12,7 +12,7 @@ A comprehensive tutoring platform built with Next.js that connects students with
   - Download tracking and analytics
 - **Video Tutorials**: Stream educational video content with tracking
 - **Pricing Plans**: Multiple subscription tiers with different access levels
-- **Payment Processing**: Integrated Mpesa STK Push for secure mobile payments in Kenya
+- **Payment Processing**: Provider-switched checkout with M-Pesa STK Push active and Paystack available via configuration
 - **Admin Dashboard**: Complete content management system for resources, videos, and blog posts
 - **Authentication**: Secure user authentication with role-based access (admin-only system)
 - **Responsive Design**: Modern UI built with Tailwind CSS and shadcn/ui components
@@ -25,7 +25,7 @@ A comprehensive tutoring platform built with Next.js that connects students with
 - **Framework**: Next.js 15 (App Router) with Turbopack
 - **Database**: PostgreSQL (Neon) with Prisma ORM
 - **Authentication**: NextAuth.js v4
-- **Payment Provider**: Mpesa STK Push (Safaricom Daraja API)
+- **Payment Provider**: M-Pesa Daraja STK Push (active) with Paystack hosted checkout available via `ACTIVE_PAYMENT_PROVIDER`
 - **Styling**: Tailwind CSS v4 + shadcn/ui components
 - **File Storage**: Cloudinary for media files
 - **Rich Text Editor**: Tiptap with custom extensions
@@ -66,22 +66,23 @@ DIRECT_URL="postgresql://user:password@host:port/database"
 NEXTAUTH_SECRET="your-secret-key"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Payment provider (paystack or mpesa)
-ACTIVE_PAYMENT_PROVIDER="paystack"
-
-# Paystack Payment (hosted checkout)
-PAYSTACK_SECRET_KEY="your-paystack-secret-key"
+# Active payment provider (mpesa or paystack)
+ACTIVE_PAYMENT_PROVIDER="mpesa"
 
 # Mpesa Payment (Daraja API)
+MPESA_BASE_URL="https://sandbox.safaricom.co.ke" # use https://api.safaricom.co.ke in production
 MPESA_CONSUMER_KEY="your-consumer-key"
 MPESA_CONSUMER_SECRET="your-consumer-secret"
 MPESA_PASSKEY="your-passkey"
 MPESA_BUSINESS_SHORTCODE="your-business-shortcode"
-MPESA_TILL_NUMBER="your-till-number"
+MPESA_TILL_NUMBER="your-till-number" # optional; only for Till / Buy Goods
 MPESA_CALLBACK_URL="https://your-domain.com/api/mpesa/callback"
 MPESA_ENVIRONMENT="sandbox" # or "production"
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 MPESA_CURRENCY="KES"
+
+# Paystack Payment (optional; set ACTIVE_PAYMENT_PROVIDER="paystack" to enable)
+PAYSTACK_SECRET_KEY="your-paystack-secret-key"
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME="your-cloud-name"

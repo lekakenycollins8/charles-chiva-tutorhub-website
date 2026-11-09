@@ -44,10 +44,12 @@ Copy the HTTPS URL (e.g., `https://abc123.ngrok-free.app`)
 Update your `.env.local` file with the ngrok URL:
 
 ```env
+MPESA_BASE_URL="https://sandbox.safaricom.co.ke"
 MPESA_CALLBACK_URL="https://abc123.ngrok-free.app/api/mpesa/callback"
+MPESA_ENVIRONMENT="sandbox"
 ```
 
-Replace `abc123.ngrok-free.app` with your actual ngrok URL.
+Replace `abc123.ngrok-free.app` with your actual ngrok URL. `MPESA_BASE_URL` is required and must point to the Daraja environment you are testing (`https://sandbox.safaricom.co.ke` for sandbox, `https://api.safaricom.co.ke` for production).
 
 ## Step 5: Restart Your Development Server
 
@@ -85,6 +87,7 @@ In sandbox mode, signature verification is skipped. In production, you'll need t
 For production:
 1. Use your actual domain instead of ngrok
 2. Update `MPESA_CALLBACK_URL` to your production domain
-3. Set `MPESA_ENVIRONMENT="production"`
-4. Use production Mpesa credentials
-5. Ensure your domain has SSL/TLS configured
+3. Set `MPESA_BASE_URL="https://api.safaricom.co.ke"`
+4. Set `MPESA_ENVIRONMENT="production"`
+5. Use production Mpesa credentials (`MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_PASSKEY`, `MPESA_BUSINESS_SHORTCODE`)
+6. Ensure your domain has SSL/TLS configured

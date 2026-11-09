@@ -9,12 +9,14 @@ const MPESA_BUSINESS_SHORTCODE = process.env.MPESA_BUSINESS_SHORTCODE;
 const MPESA_TILL_NUMBER = process.env.MPESA_TILL_NUMBER;
 const MPESA_CALLBACK_URL = process.env.MPESA_CALLBACK_URL;
 
-// Base URLs
-const SANDBOX_BASE_URL = 'https://sandbox.safaricom.co.ke';
-const PRODUCTION_BASE_URL = 'https://api.safaricom.co.ke';
+// Base URL must be provided via environment so sandbox/production endpoints are not hardcoded.
+const MPESA_BASE_URL = process.env.MPESA_BASE_URL;
 
 const getBaseUrl = () => {
-  return MPESA_ENVIRONMENT === 'production' ? PRODUCTION_BASE_URL : SANDBOX_BASE_URL;
+  if (!MPESA_BASE_URL) {
+    throw new Error("MPESA_BASE_URL is not configured");
+  }
+  return MPESA_BASE_URL.replace(/\/$/, "");
 };
 
 // Get transaction type based on environment and whether we have a till number
