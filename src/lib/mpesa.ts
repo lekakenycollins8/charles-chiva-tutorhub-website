@@ -141,8 +141,8 @@ export async function initiateSTKPush(params: {
       PartyB: partyB,
       PhoneNumber: normalizedPhone,
       CallBackURL: MPESA_CALLBACK_URL,
-      AccountReference: params.accountReference,
-      TransactionDesc: params.transactionDesc,
+      AccountReference: params.accountReference.slice(0, 12),
+      TransactionDesc: params.transactionDesc.slice(0, 13),
     };
 
     console.log("🔧 STK Push payload:", {

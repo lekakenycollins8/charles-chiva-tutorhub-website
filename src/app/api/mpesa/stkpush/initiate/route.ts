@@ -6,6 +6,14 @@ import { storeCheckoutMetadata } from "@/lib/checkout-metadata-db";
 
 const CURRENCY = process.env.MPESA_CURRENCY || "KES";
 
+// Daraja limits: AccountReference max 12 chars for PayBill / 13 for Till, TransactionDesc max 13.
+// Keep these short; full purchase details are stored in CheckoutMetadata.
+const PLAN_ACCOUNT_REFERENCES: Record<string, string> = {
+  "basic-hourly": "BASIC",
+  "standard-weekly": "STDWEEK",
+  "premium-monthly": "PREMMTH",
+};
+
 export async function POST(request: Request) {
   console.log("🚀 Mpesa STK push initiate API called");
 
@@ -60,8 +68,8 @@ export async function POST(request: Request) {
       const response = await initiateSTKPush({
         phoneNumber,
         amount: total,
-        accountReference: `Plan-${planId}`,
-        transactionDesc: `Payment for ${plan.name} plan (${quantity} ${plan.priceUnit})`,
+        accountReference: PLAN_ACCOUNT_REFERENCES[planId] ?? planId.slice(0, 12),
+        transactionDesc: "Plan payment",
       });
 
       console.log("🎉 STK push initiated successfully");
@@ -133,8 +141,8 @@ export async function POST(request: Request) {
       const response = await initiateSTKPush({
         phoneNumber,
         amount: resource.price,
-        accountReference: `Resource-${resourceId}`,
-        transactionDesc: `Payment for resource: ${resource.title}`,
+        accountReference: `RES${resourceId.slice(-8)}`,
+        transactionDesc: "Res payment",
       });
 
       console.log("🎉 STK push initiated successfully");
