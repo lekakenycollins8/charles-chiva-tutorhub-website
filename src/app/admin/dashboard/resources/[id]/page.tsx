@@ -89,10 +89,6 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
             <div className="text-sm text-gray-500">
               Created {formatDistanceToNow(new Date(resource.createdAt), { addSuffix: true })}
             </div>
-            <div className="flex items-center text-sm text-gray-500">
-              <Download className="h-4 w-4 mr-1" />
-              <span>{resource.downloads || 0} downloads</span>
-            </div>
           </CardFooter>
         </Card>
         

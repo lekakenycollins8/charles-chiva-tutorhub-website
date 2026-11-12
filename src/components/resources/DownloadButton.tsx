@@ -214,7 +214,6 @@ export default function DownloadButton({
           type: 'resource',
           resourceId,
           phoneNumber,
-          email,
           firstName,
           lastName
         }),
@@ -293,15 +292,17 @@ export default function DownloadButton({
         return;
       }
 
-      if (!email || !firstName || !lastName || (activeProvider === 'mpesa' && !phoneNumber)) {
+      if (!firstName || !lastName || (activeProvider === 'paystack' && !email) || (activeProvider === 'mpesa' && !phoneNumber)) {
         setErrorMessage('Please fill in all required fields.');
         return;
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setErrorMessage('Please enter a valid email address.');
-        return;
+      if (activeProvider === 'paystack') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          setErrorMessage('Please enter a valid email address.');
+          return;
+        }
       }
 
       if (activeProvider === 'mpesa') {
@@ -323,6 +324,11 @@ export default function DownloadButton({
     <div className="space-y-4">
       {showCustomerForm && (
         <div className="flex flex-col space-y-3">
+          {isPaid && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
+              The PDF will download automatically upon payment.
+            </div>
+          )}
           {activeProvider === 'mpesa' && (
             <div>
               <label className="text-sm font-medium">Phone Number *</label>
@@ -361,24 +367,22 @@ export default function DownloadButton({
               />
             </div>
           </div>
-          <div>
-            <label className="text-sm font-medium">Email Address *</label>
-            <div className="relative">
-              {activeProvider === 'paystack' && (
+          {activeProvider === 'paystack' && (
+            <div>
+              <label className="text-sm font-medium">Email Address *</label>
+              <div className="relative">
                 <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 mt-1" />
-              )}
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="john@example.com"
-                className={`mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${activeProvider === 'paystack' ? 'pl-10' : ''}`}
-              />
-            </div>
-            {activeProvider === 'paystack' && (
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="john@example.com"
+                  className="mt-1 w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               <p className="text-xs text-gray-500 mt-1">You will be redirected to Paystack to complete payment</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -426,6 +430,12 @@ export default function DownloadButton({
           </>
         )}
       </button>
+
+      {isPaid && !hasValidToken && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
+          The PDF will download automatically upon payment.
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getResource, incrementDownloadCount } from "@/lib/actions/resource-actions";
+import { getResource } from "@/lib/actions/resource-actions";
 import { verifyDownloadToken } from "@/lib/auth-utils";
 
 // Detect MIME type from file content (magic numbers)
@@ -103,9 +103,6 @@ export async function POST(
       }
     }
     
-    // Increment download count for both free and paid resources
-    await incrementDownloadCount(resourceId);
-
     // The stored secure_url is already the correct delivery URL
     const fileResponse = await fetch(resource.fileUrl);
 

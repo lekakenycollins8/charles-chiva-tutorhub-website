@@ -13,7 +13,6 @@ interface Resource {
   isPaid: boolean;
   price: number | null;
   category: string;
-  downloads: number;
   imageUrl?: string;
   createdAt: Date | string;
   updatedAt: Date | string;

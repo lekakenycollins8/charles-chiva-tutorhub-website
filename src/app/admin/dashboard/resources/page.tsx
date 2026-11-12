@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Filter, Download, Search, Loader2, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
+import { FileText, Plus, Filter, Search, Loader2, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
@@ -205,11 +205,6 @@ export default function ResourcesPage() {
                             <span>{resource.category}</span>
                             <span>•</span>
                             <span>{formatDistanceToNow(new Date(resource.createdAt), { addSuffix: true })}</span>
-                            <span>•</span>
-                            <span className="flex items-center">
-                              <Download className="h-3 w-3 mr-1" />
-                              {resource.downloads || 0}
-                            </span>
                           </div>
                         </div>
                       </div>

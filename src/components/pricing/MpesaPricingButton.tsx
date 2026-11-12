@@ -18,7 +18,6 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
   const [showQuantity, setShowQuantity] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "sent" | "success" | "error">("idle");
@@ -63,7 +62,7 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
   };
 
   const initiatePayment = async () => {
-    if (!phoneNumber || !email || !firstName || !lastName) {
+    if (!phoneNumber || !firstName || !lastName) {
       setErrorMessage('Please fill in all required fields.');
       return;
     }
@@ -88,7 +87,6 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
           planId: plan.id,
           quantity,
           phoneNumber,
-          email,
           firstName,
           lastName,
         }),
@@ -264,19 +262,6 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
             </div>
           </div>
 
-          <div>
-            <Label htmlFor={`email-${plan.id}`} className="text-sm font-medium">
-              Email Address *
-            </Label>
-            <Input
-              id={`email-${plan.id}`}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="john@example.com"
-              className="mt-1"
-            />
-          </div>
         </div>
       )}
 

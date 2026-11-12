@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getResources, getCategoryCounts } from "@/lib/actions/resource-actions";
-import { ArrowRight, Download, FileText, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { ArrowRight, FileText, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import Link from "next/link";
 import type { Resource } from "@/types/resource";
 import { ResourceTabs } from "@/components/resources/ResourceTabs";
@@ -40,10 +40,6 @@ function ResourceCard({ resource }: { resource: Resource }) {
           ) : (
             <span className="text-green-600 font-semibold">Free</span>
           )}
-        </div>
-        <div className="text-sm text-gray-500 flex items-center">
-          <Download className="h-4 w-4 mr-1" />
-          <span>{resource.downloads || 0} downloads</span>
         </div>
       </CardContent>
       <CardFooter className="pt-0 flex justify-between">

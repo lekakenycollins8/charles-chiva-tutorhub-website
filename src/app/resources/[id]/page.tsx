@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getResource, incrementDownloadCount } from "@/lib/actions/resource-actions";
+import { getResource } from "@/lib/actions/resource-actions";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowLeft, Download, FileText, Calendar, HardDrive, Eye, Tag } from "lucide-react";
+import { ArrowLeft, Download, FileText, Calendar, HardDrive, Tag } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DownloadButton from "@/components/resources/DownloadButton";
@@ -139,7 +139,7 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                 {/* Resource Details */}
                 <div>
                   <h2 className="text-lg font-semibold mb-4 text-gray-900">Resource Details</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center text-gray-500 mb-1">
                         <Tag className="h-4 w-4 mr-2" />
@@ -160,13 +160,6 @@ export default async function ResourcePage({ params }: { params: Promise<{ id: s
                         <span className="text-sm">Size</span>
                       </div>
                       <p className="font-medium text-gray-900">{formatFileSize(resource.fileSize)}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Eye className="h-4 w-4 mr-2" />
-                        <span className="text-sm">Downloads</span>
-                      </div>
-                      <p className="font-medium text-gray-900">{resource.downloads || 0}</p>
                     </div>
                   </div>
                 </div>

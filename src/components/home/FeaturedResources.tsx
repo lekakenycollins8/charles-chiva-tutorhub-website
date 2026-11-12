@@ -13,7 +13,6 @@ interface Resource {
   isPaid: boolean;
   price: number | null;
   category: string;
-  downloads: number;
   imageUrl?: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -75,24 +74,7 @@ const FeaturedResources = async () => {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 16v1a3 3 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                      />
-                    </svg>
-                    <span>{resource.downloads || 0} downloads</span>
-                  </div>
+                <div className="flex justify-end mt-4">
                   <Link href={`/resources/${resource.id}`} className="inline-block">
                     <Button className="bg-blue-600 hover:bg-blue-700 transition-colors">
                       View Details

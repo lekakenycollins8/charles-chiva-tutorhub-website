@@ -92,7 +92,6 @@ export async function getResources(filters: ResourceFilters = {}) {
         price: true,
         category: true,
         thumbnailUrl: true,
-        downloads: true,
         createdAt: true,
         updatedAt: true
       },
@@ -159,7 +158,6 @@ export async function getResource(id: string) {
         price: true,
         category: true,
         thumbnailUrl: true,
-        downloads: true,
         createdAt: true,
         updatedAt: true
       }
@@ -336,40 +334,13 @@ export async function deleteResource(id: string) {
   }
 }
 
-// Function to increment download count
-export async function incrementDownloadCount(id: string) {
-  try {
-    // Check if resource exists
-    const existingResource = await prisma.resource.findUnique({
-      where: { id }
-    });
-
-    if (!existingResource) {
-      throw new Error(`Resource with ID ${id} not found`);
-    }
-
-    // Increment download count in database
-    await prisma.resource.update({
-      where: { id },
-      data: {
-        downloads: { increment: 1 }
-      }
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error(`Error incrementing download count for resource ${id}:`, error);
-    return { success: false, message: error instanceof Error ? error.message : "Failed to increment download count" };
-  }
-}
-
 // Function to fetch featured resources for the homepage
 export async function getFeaturedResources(limit: number = 3) {
   try {
-    // Strategy: Get a mix of most downloaded and newest resources
-    // First get top downloaded resources
+    // Strategy: Get a mix of resources, then shuffle for a diverse featured list
+    // First get the newest resources
     const topDownloaded = await prisma.resource.findMany({
-      orderBy: { downloads: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: Math.ceil(limit / 2),
       select: {
         id: true,
@@ -382,7 +353,6 @@ export async function getFeaturedResources(limit: number = 3) {
         price: true,
         category: true,
         thumbnailUrl: true,
-        downloads: true,
         createdAt: true,
         updatedAt: true
       }
@@ -407,7 +377,6 @@ export async function getFeaturedResources(limit: number = 3) {
         price: true,
         category: true,
         thumbnailUrl: true,
-        downloads: true,
         createdAt: true,
         updatedAt: true
       }

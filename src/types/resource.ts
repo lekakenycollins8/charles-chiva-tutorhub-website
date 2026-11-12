@@ -11,7 +11,6 @@ export interface Resource {
   price: number | null;
   category: string;
   thumbnailUrl: string | null;
-  downloads: number;
 }
 
 export interface ResourceResponse {
