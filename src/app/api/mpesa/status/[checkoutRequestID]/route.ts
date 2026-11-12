@@ -7,38 +7,35 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ checkoutRequestID: string }> }
 ) {
-  try {
-    const { checkoutRequestID } = await params;
+  const { checkoutRequestID } = await params;
 
-    if (!checkoutRequestID) {
-      return NextResponse.json({ error: "checkoutRequestID is required" }, { status: 400 });
+  if (!checkoutRequestID) {
+    return NextResponse.json({ error: "checkoutRequestID is required" }, { status: 400 });
+  }
+
+  try {
+    const [payment, metadata] = await Promise.all([
+      prisma.payment.findUnique({ where: { reference: checkoutRequestID } }),
+      getCheckoutMetadata(checkoutRequestID),
+    ]);
+
+    // Terminal state already recorded by the webhook: no need to hit Daraja
+    if (payment && (payment.status === "COMPLETED" || payment.status === "FAILED")) {
+      return NextResponse.json({ mpesaStatus: null, paymentRecord: payment, metadata });
     }
 
-    console.log("🔍 Querying transaction status for:", checkoutRequestID);
+    // Best-effort Daraja query. Failure here means "still pending", not an error.
+    let mpesaStatus: unknown = null;
+    try {
+      mpesaStatus = await queryTransactionStatus(checkoutRequestID);
+    } catch (err) {
+      console.warn("Daraja status query unavailable (treating as pending):", err instanceof Error ? err.message : err);
+    }
 
-    // Query Mpesa API for transaction status
-    const statusResponse = await queryTransactionStatus(checkoutRequestID);
-
-    console.log("✅ Mpesa status response:", statusResponse);
-
-    // Also check our database for any existing payment record
-    const payment = await prisma.payment.findUnique({
-      where: { reference: checkoutRequestID },
-    });
-
-    // Get metadata for additional context
-    const metadata = await getCheckoutMetadata(checkoutRequestID);
-
-    return NextResponse.json({
-      mpesaStatus: statusResponse,
-      paymentRecord: payment,
-      metadata,
-    });
-  } catch (error: any) {
-    console.error("❌ Mpesa status query error:", error?.response?.data || error);
-    return NextResponse.json(
-      { error: "Failed to query transaction status" },
-      { status: 500 }
-    );
+    return NextResponse.json({ mpesaStatus, paymentRecord: payment, metadata });
+  } catch (error) {
+    // Only genuine DB failures reach here
+    console.error("❌ Mpesa status route error:", error);
+    return NextResponse.json({ error: "Failed to load payment status" }, { status: 500 });
   }
 }

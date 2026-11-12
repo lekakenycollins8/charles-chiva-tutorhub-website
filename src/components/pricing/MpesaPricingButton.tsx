@@ -101,13 +101,11 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
       const data = await response.json();
       console.log('Mpesa STK push initiated:', data);
 
-      setPaymentStatus("success");
-
       // Poll for payment status
       pollPaymentStatus(data.checkoutRequestID);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Payment initialization error:', error);
-      setErrorMessage(error.message || 'Failed to initiate payment. Please try again.');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to initiate payment. Please try again.');
       setPaymentStatus("error");
     } finally {
       setLoading(false);
@@ -132,8 +130,9 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
         if (response.ok) {
           const data = await response.json();
           console.log('Payment status:', data);
+          const status = data.paymentRecord?.status;
 
-          if (data.paymentRecord?.status === "COMPLETED") {
+          if (status === "COMPLETED") {
             setPaymentStatus("success");
             // Redirect to success page after a short delay
             setTimeout(() => {
@@ -142,20 +141,18 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
             return;
           }
 
-          if (data.paymentRecord?.status === "FAILED") {
+          if (status === "FAILED") {
             setPaymentStatus("error");
             setErrorMessage("Payment failed. Please try again.");
             return;
           }
-
-          // Continue polling
-          setTimeout(poll, 5000);
         }
       } catch (error) {
         console.error('Error polling payment status:', error);
         // Continue polling despite errors
-        setTimeout(poll, 5000);
       }
+
+      setTimeout(poll, 5000); // reached on pending, !ok, and thrown errors
     };
 
     poll();
@@ -252,7 +249,7 @@ export default function MpesaPricingButton({ plan, className }: MpesaPricingButt
                 Last Name *
               </Label>
               <Input
-                id={`lastName}-${plan.id}`}
+                id={`lastName-${plan.id}`}
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}

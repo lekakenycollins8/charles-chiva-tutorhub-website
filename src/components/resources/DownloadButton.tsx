@@ -177,25 +177,25 @@ export default function DownloadButton({
         const response = await fetch(`/api/mpesa/status/${checkoutRequestID}`);
         if (response.ok) {
           const data = await response.json();
+          const status = data.paymentRecord?.status;
 
-          if (data.paymentRecord?.status === "COMPLETED") {
+          if (status === "COMPLETED") {
             await completePaidDownload(checkoutRequestID, "mpesa");
             return;
           }
 
-          if (data.paymentRecord?.status === "FAILED") {
+          if (status === "FAILED") {
             setPaymentStatus("error");
-            setErrorMessage("Payment failed. Please try again.");
+            setErrorMessage("Payment failed or was cancelled. Please try again.");
             setLoading(false);
             return;
           }
-
-          setTimeout(poll, 5000);
         }
       } catch (error) {
         console.error('Error polling payment status:', error);
-        setTimeout(poll, 5000);
       }
+
+      setTimeout(poll, 5000); // reached on pending, !ok, and thrown errors
     };
 
     poll();
